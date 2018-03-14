@@ -1,0 +1,233 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIPropertyList;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeAttachment;
+
+[scriptable, uuid(FAB7C0A3-BB07-4f80-8F05-F2E3C8E14AED)]
+interface msqIEwsNativeItem : nsISupports
+{
+  /**
+   * This interface provides a local representation of an item
+   *  as described by the EWS data model.
+   */
+  attribute AString itemId;
+
+  /**
+   * The previous item id, used to report changes of the id. This is not persisted.
+   */
+  attribute AString previousId;
+
+  /// IPM class
+  attribute AString itemClass;
+
+  /// change key
+  attribute AString changeKey;
+
+  /// folder id that contains the item
+  attribute AString folderId;
+
+  /// some items (like recurring item exceptions) are related to other items
+  attribute AString parentId;
+
+  /// OriginalStart for a recurrence, used by the datastore to index the item
+  attribute AString originalStart;
+
+  /// item id, replaced by parentId + "?OriginalStart=" + originalStart
+  ///  when available. This is used for indexing in the datastore
+  ///  and mailbox
+  readonly attribute AString exItemId;
+
+  /// instanceIndex, usable with parentId as a replacement for itemId
+  attribute unsigned long instanceIndex;
+
+  /// distinguished folder id that contains the item. This is a partial
+  /// implementation, created initially only for create item.
+  attribute AString distinguishedFolderId;
+
+  /// item is newly updated on server
+  attribute boolean updatedOnServer;
+
+  /// item is newly created on server
+  attribute boolean newOnServer;
+
+  /// item is newly deleted on server
+  attribute boolean deletedOnServer;
+
+  /// item change detected, needs SOAP update  This is intended for
+  ///  internal use to detect when a second SOAP call is required to
+  ///  update all properties
+  attribute boolean needsProperties;
+
+  /// item is marked as deleted on the server
+  attribute boolean deleted;
+
+  // the main repository for properties
+  attribute msqIPropertyList properties;
+
+  /// if this is a distribution list, the expansion
+  attribute msqIPropertyList dlExpansion;
+
+  /// storage for properties that are not part of the SOAP representation
+  attribute msqIPropertyList localProperties;
+
+  /// string representation of properties for storage. Setting this will
+  ///  also update the properties property list.
+  attribute AString propertiesString;
+
+  /// string representation of dlExpansion for storage. Setting this will
+  ///  also update the dlExpansion property list.
+  attribute AString dlExpansionString;
+
+  /// native mailbox containing the item
+  attribute msqIEwsNativeMailbox mailbox;
+
+  /// combined set of status flags, used in storage
+  attribute unsigned long flags;
+
+  /// set one or more flags
+  void raiseFlags(in unsigned long aFlags);
+  /// clear one or more flags
+  void clearFlags(in unsigned long aFlags);
+
+  /// status flag masks for "flags" attribute
+  /*
+   * What do these flags mean? New/Updated/DeletedOnServer mean that
+   * Old Definition: (pre 2012-04-13) 
+   * ... the item in the native datastore has been changed on the server and
+   * is correct in the datastore, but has not been reflected in the local
+   * (Skink) representation (though possibly the NEEDS_PROPERTIES flag may be set,
+   * so the datastore does not have correct properties).
+   * New definition: (post 2012-04-13)
+   * ... during a folder update operation (getNewItems) the flagged item was reported
+   * as changed on the server. After the ItemChanged event, these are cleared by
+   * the native system. TODO: make these processing flags, stop persisting, and
+   * stop indexing.
+   *
+   * New/Updated/Deleted locally means that the item in the native datastore
+   * has changed locally, but has not been updated on the server. Notice that
+   * a local 'delete' is represented initially by raising the deleted bit.
+   * After the server receives word of the deleted item, the deleted item
+   * should be removed from the datastore.
+   *
+   * Dirty means that the item in the datastore is invalid. Normally it
+   * is not reflected in Skink results, and should be reread from the server.
+   *
+   * 
+   */
+
+  /*
+   * Generic change management plan:
+   *
+   * Local changes: 
+   *   - Skink base item changes (nsIMsgDBHdr, calIEvent, etc.)
+   *   - Skink calls a colonial object method to do the change
+   *   - Colonial method converts Skink base item changes into a new native propertyList for the item
+   *   - Those new properties are merged into the datastore, with changes saved in the localProperties Update
+   *   field, and UpdatedLocally flag set, all persisted in the datastore. Note changeKey does NOT change
+   *   yet for the item, as the Updates are relative to the last changeKey
+   *   - (Skink UI may be notified)
+   *   - If online, folder update is initiated. Folder update first saves the Updates from any items with
+   *   UpdatedLocally set. Acceptance of update results in UpdatedLocally cleared, and new item changeKey saved.
+   *   Folder syncState is then requested, and a list of changedItems received. If the item changeKey does not
+   *   match the existing changeKey, then needsProperties is set.
+   *   - 
+   *   
+   */
+  const unsigned long UpdatedOnServerBit       = 0x00000001;
+  const unsigned long NewOnServerBit           = 0x00000002;
+  const unsigned long DeletedOnServerBit       = 0x00000004;
+  const unsigned long AllOnServer              = UpdatedOnServerBit | NewOnServerBit | DeletedOnServerBit;
+  // The deleted bit signals that the message has been deleted in the local representation
+  //  of the item (eg the nsIMsgDBHdr has been deleted from the folder)
+  const unsigned long DeletedBit               = 0x00000010; // item is deleted in the skink datastore
+  const unsigned long BodyIsHtml               = 0x00000040;
+  const unsigned long HasOfflineBody           = 0x00000080;
+  const unsigned long Persisted                = 0x00000100;
+  const unsigned long DeletedLocally           = 0x00000400;
+  const unsigned long UpdatedLocally           = 0x00000800; // changeKey represents pre-change value; properties include
+                                                             //  the changes, changes stored in Updates.
+  const unsigned long NewLocally               = 0x00001000;
+  const unsigned long AllLocally               = DeletedLocally | UpdatedLocally | NewLocally;
+  const unsigned long HasTempId                = 0x00002000;
+  const unsigned long Dirty                    = 0x00004000; // local representation may not match server
+  const unsigned long NeedsResync              = 0x00010000; // this item needs resync and is invalid until done
+
+  /// combined set of processing flags, not persisted. Right now I am keeping
+  /// these completely separate from the flags, yet still I am trying
+  /// to not duplicate bits between the two. If needed, I could start
+  /// duplicating.
+  attribute unsigned long processingFlags;
+  const unsigned long NeedsPropertiesBit       = 0x00000008;
+
+  const unsigned long HasBody                  = 0x00000020;
+  // for recurring masters, do we need to get modified occurrences?
+  // todo: this flag is only used in the C++ machine version, delete when C++ is removed
+  const unsigned long NeedsOccurrences         = 0x00000200;
+
+  // For some reason, in sync we sometimes get a ReadFlagChanged report that is false. Flag those.
+  const unsigned long DidNotChange             = 0x00008000;
+
+  // Item is deleted in datastore
+  const unsigned long DeletedInDatastore       = 0x00020000;
+
+  /// message body
+  attribute AString body;
+
+  /// As an error check, I need to see if the body is empty. I don't want to copy
+  ///  the entire string just to do that
+  readonly attribute boolean isBodyEmpty;
+
+  /// MIME version of item
+  attribute AString mimeContent;
+
+  /// character set for MIME item
+  attribute AString mimeCharacterSet;
+
+  // clone the item, giving it a new item id and change key
+  msqIEwsNativeItem clone(in AString itemId, in AString changeKey, in msqIEwsNativeFolder aNewFolder);
+
+  msqIEwsNativeAttachment getAttachmentById(in AString aAttachmentId);
+
+  msqIEwsNativeAttachment getAttachmentByIndex(in long aIndex);
+
+  // This creates the attachment, and adds it to the properties for the item
+  msqIEwsNativeAttachment addAttachment(in AString aAttachmentId);
+
+  void removeAttachment(in msqIEwsNativeAttachment aNativeAttachment);
+
+  // Given newProperties, merge these into a local Updates PL (creating if needed). Does not persist.
+  // We return (not throw) NS_ERROR_NOT_INITIALIZED if no changes, else NS_OK;
+  nsresult mergeChanges(in msqIPropertyList newProperties);
+
+  readonly attribute unsigned long attachmentCount;
+
+  // Convenience method to do a sync persist of the item, typically only
+  //  used in error recovery.
+  void persist();
+
+  // Access an extended property by property tag
+  AString getExtendedProperty(in AString aPropertyTag);
+  // this is a service function not dependent on this
+  void setExtendedProperty(in AString aPropertyTag, in AString aPropertyType, in AString aValue, in msqIPropertyList aProperties);
+
+};
+
+%{C++
+
+  // {29ED5A69-B62E-4CEA-8962-67C0350E4CEF}
+#define MSQEWSNATIVEITEM_CID \
+{ 0x29ed5a69, 0xb62e, 0x4cea, { 0x89, 0x62, 0x67, 0xc0, 0x35, 0xe, 0x4c, 0xef } }
+
+%}

@@ -1,0 +1,25 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2013 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeItem;
+
+[scriptable, uuid(9A64226A-4803-4616-B3AE-D49F306D082F)]
+interface msqIEwsCalUtils : nsISupports
+{
+  /**
+   *  Calendar utilities
+   */
+
+  // convert a meeting item into a text/calendar MIME string
+  ACString itemToCalendar(in msqIEwsNativeItem aItem);
+
+};

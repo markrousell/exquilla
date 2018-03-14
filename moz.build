@@ -1,0 +1,76 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla, LLC.
+# *
+# * Copyright 2013 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+# */
+
+DIRS += [
+  'public',
+  'content',
+  'native',
+  'skin',
+]
+
+EXTRA_COMPONENTS += [
+  'components/am-ewsServerComponent.js',
+  'components/calComponents.js',
+  'components/ewsAbAutocomplete.js',
+  'components/ewsAbDirectoryComponent.js',
+  'components/ewsActivityComponent.js',
+  'components/ewsComposeComponent.js',
+  'components/ewsIncomingServerComponent.js',
+  'components/ewsMsgFolderComponent.js',
+  'components/ewsProtocolComponent.js',
+  'components/ewsSendComponent.js',
+  'components/ewsServiceComponent.js',
+  'components/ewsUrlComponent.js',
+  'components/jsComponents.manifest',
+  'native/components/datastoreComponent.js',
+  'native/components/datastoreComponent.manifest',
+  'native/components/ewsSoapRequestComponent.js',
+  'native/components/nativeComponents.js',
+  'native/components/nativeComponents.manifest',
+]
+
+EXTRA_JS_MODULES += [
+  'modules/Base64.jsm',
+  'modules/ewsAbService.jsm',
+  'modules/ewsActivity.js',
+  'modules/ewsCalendar.jsm',
+  'modules/EwsFBA.jsm',
+  'modules/EwsNotification.jsm',
+  'modules/ewsUtils.jsm',
+  'modules/extensionSupport.jsm',
+  'modules/JaBaseAbDirectory.jsm',
+  'modules/JaBaseCompose.jsm',
+  'modules/JaBaseIncomingServer.jsm',
+  'modules/JaBaseMsgFolder.jsm',
+  'modules/JaBaseSend.jsm',
+  'modules/JaBaseUrl.jsm',
+  'modules/JSAccountUtils.jsm',
+  'modules/PromiseUtils.jsm',
+  'native/modules/autodiscover.js',
+  'native/modules/datastore.js',
+  'native/modules/EwsNativeAttachment.jsm',
+  'native/modules/EwsNativeFolder.jsm',
+  'native/modules/EwsNativeItem.jsm',
+  'native/modules/EwsNativeMachine.jsm',
+  'native/modules/EwsNativeMailbox.jsm',
+  'native/modules/EwsNativeService.jsm',
+  'native/modules/EWStoPL.js',
+  'native/modules/MonitoredRequest.jsm',
+  'native/modules/PropertyList.jsm',
+  'native/modules/SoapTransport.jsm',
+  'native/modules/StringArray.jsm',
+]
+
+DEFINES['INCLUDEDIR'] = TOPOBJDIR + '/dist/include'
+
+TEST_DIRS += ['test']
+FINAL_TARGET_FILES += ['chrome.manifest']
+XPI_NAME = 'exquilla'

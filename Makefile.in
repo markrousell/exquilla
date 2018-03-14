@@ -1,0 +1,116 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla.
+# *
+# * Copyright 2013 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+# */
+
+DEPTH     = @DEPTH@
+topsrcdir = @top_srcdir@
+srcdir    = @srcdir@
+VPATH     = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+BASE_VERSION := $(shell sed -n 's/^\([0-9][0-9]*\).*/\1/ p' <@top_srcdir@/config/milestone.txt)
+DEFINES += -DMSQ_MOZ_$(BASE_VERSION)
+
+MSQ_INSTALL_EXTENSION_ID = exquilla@mesquilla.com
+
+# get the basic GECKO version, convert 8.0a2 to 8
+MY_VERSION = $(shell echo $(MOZILLA_VERSION) | sed "s/\([0-9]*\)\..*/\1/")
+# get the actual version including dot version, convert 8.0a2 to 8.0
+MY_VERSION2 = $(shell echo $(MOZILLA_VERSION) | sed "s/\([0-9]*\.[0-9]\).*/\1/")
+
+MY_SRCDIR = $(topsrcdir)/extensions
+
+#update extension versions, allowing overrides
+ifndef EXQUILLA_VERSION
+EXQUILLA_VERSION = $(MY_VERSION).0pre1
+endif
+XPI_PKGNAME = exquilla-$(EXQUILLA_VERSION)
+
+ifneq (,$(filter 38,$(BASE_VERSION))) # BASE_VERSION == 38
+  DIST_FILES = chrome.manifest
+endif
+
+include $(topsrcdir)/config/rules.mk
+
+# OS X specific stuff
+ifeq (Darwin,$(HOST_OS_ARCH))
+# If the macbundle dist dir was already created, sync here to avoid
+# the need to make -C objdir/mail/app each time
+libs::
+	[ -d $(DIST)/$(MOZ_MACBUNDLE_NAME) ] && rsync -a $(FINAL_TARGET) $(DIST)/$(MOZ_MACBUNDLE_NAME)/Contents/MacOS/extensions/$(INSTALL_EXTENSION_ID) || true
+endif
+
+ifndef EXQUILLA_MINVERSION
+EXQUILLA_MINVERSION=$(MY_VERSION).0a1
+endif
+
+ifndef EXQUILLA_MAXVERSION
+EXQUILLA_MAXVERSION=$(MY_VERSION).*
+endif
+
+_EXQUILLA_BUILD_DATE_=$(shell date "+%F %T")
+
+ifndef OPTIONAL_UPDATE_SITE
+OPTIONAL_UPDATE_SITE=\<!-- default update site --\>
+endif
+
+export::
+		$(INSTALL) $(srcdir)/chrome.manifest $(FINAL_TARGET)
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/en-US
+		$(INSTALL) $(srcdir)/locale/en-US/* $(FINAL_TARGET)/locale/en-US
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/de
+		$(INSTALL) $(srcdir)/locale/de/* $(FINAL_TARGET)/locale/de
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/ru
+		$(INSTALL) $(srcdir)/locale/ru/* $(FINAL_TARGET)/locale/ru
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/fr
+		$(INSTALL) $(srcdir)/locale/fr/* $(FINAL_TARGET)/locale/fr
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/it
+		$(INSTALL) $(srcdir)/locale/it/* $(FINAL_TARGET)/locale/it
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/ja
+		$(INSTALL) $(srcdir)/locale/ja/* $(FINAL_TARGET)/locale/ja
+		$(NSINSTALL) -D $(FINAL_TARGET)/locale/es-ES
+		$(INSTALL) $(srcdir)/locale/es-ES/* $(FINAL_TARGET)/locale/es-ES
+		$(NSINSTALL) -D $(FINAL_TARGET)/defaults/preferences
+		$(INSTALL) $(srcdir)/defaults/preferences/* $(FINAL_TARGET)/defaults/preferences
+		sed "s/_EXQUILLA_VERSION_/$(EXQUILLA_VERSION)/g" <$(srcdir)/install.rdf | \
+		sed "s/_EXQUILLA_BUILD_DATE_/$(_EXQUILLA_BUILD_DATE_)/g" | \
+		sed "s/_OPTIONAL_UPDATE_SITE_/$(OPTIONAL_UPDATE_SITE)/g" | \
+		sed "s/_EXQUILLA_MINVERSION_/$(EXQUILLA_MINVERSION)/g" | \
+		sed "s/_EXQUILLA_MAXVERSION_/$(EXQUILLA_MAXVERSION)/g" >$(FINAL_TARGET)/install.rdf
+	# cleanup items which may be changed by multirelease
+	rm -f $(FINAL_TARGET)/components/$(DLL_PREFIX)exquilla-*
+
+libs::
+	echo 'interfaces exquilla.xpt' > $(FINAL_TARGET)/components/interfaces.manifest
+	echo 'interfaces ewsnative.xpt' >> $(FINAL_TARGET)/components/interfaces.manifest
+
+# bug 1047924 stopped putting extensions in dist/bin/extensions. Restore the previous
+# behavior. See also bug 1051642 which may fix this
+ifdef MSQ_INSTALL_EXTENSION_ID
+LIGHTNING_ID = {e2fda1a4-762b-4020-b5ad-a41df1933103}
+tools::
+	$(info Exquilla tools installing ExQuilla and Lightning at $(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions)
+	$(RM) -r '$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(MSQ_INSTALL_EXTENSION_ID)'
+	$(NSINSTALL) -D '$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(MSQ_INSTALL_EXTENSION_ID)'
+	$(call copy_dir,$(FINAL_TARGET),$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(MSQ_INSTALL_EXTENSION_ID))
+	$(RM) -r '$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(LIGHTNING_ID)'
+	$(NSINSTALL) -D '$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(LIGHTNING_ID)'
+	$(call copy_dir,$(FINAL_TARGET)/../lightning,$(DIST)/bin$(DIST_SUBDIR:%=/%)/extensions/$(LIGHTNING_ID))
+endif
+
+#ifeq (WINNT,$(HOST_OS_ARCH))
+#tools::
+#	# build symbols
+#	$(topsrcdir)/toolkit/crashreporter/tools/win32/dump_syms_vc$(_MSC_VER).exe src/exquilla.pdb > \
+#		src/exquilla.sym
+#	$(topsrcdir)/toolkit/crashreporter/tools/win32/dump_syms_vc$(_MSC_VER).exe webservices/build/src/websrvcs.pdb > \
+#		webservices/build/src/websrvcs.sym
+#endif

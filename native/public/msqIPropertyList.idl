@@ -1,0 +1,211 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is web services module code.
+ *
+ * The Initial Developer of the Original Code is R. Kent James <rkent@mesquilla.com>
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2010
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+#include "nsISupports.idl"
+#include "nsIVariant.idl"
+#include "msqIPropertyEnumerator.idl"
+#include "nsIArray.idl"
+interface msqIStringArray;
+
+/**
+ * This interface describes a property list, which consists of an ordered list of
+ *  name/value pairs. Names beginning with '$' are treated specially, in particular
+ *  are ignored in enumerators.
+ *
+ * In some cases is may be convenient to have a simple property with attributes.
+ * To support this special case, you use a property list with a special value named
+ * '$value' to represent the value. Routines that access properties as simple values,
+ * if they detect that the item is a property list, will check for that special
+ * '$value'-named item, and use it instead.
+ */
+
+[scriptable, uuid(0AEF3768-5398-4580-928D-8A68DE334B29)]
+interface msqIPropertyList : nsISupports
+{
+    /**
+     * length
+     *
+     * number of elements in the list. This includes the special names
+     * that begin with $
+     */
+    readonly attribute unsigned long length;
+
+    /**
+     * enumerate the list
+     *
+     * @returns a new enumerator positioned at the start of the array
+     * @throws NS_ERROR_FAILURE if the array is empty (to make it easy
+     *         to detect errors)
+     */
+    msqIPropertyEnumerator enumerate();
+
+    /**
+     * appendElement()
+     *
+     * Append an element at the end of the array.
+     *
+     */
+    void appendElement(in AString aName, in nsIVariant aValue);
+
+    /**
+     * Replace a named element if it exists, else append it.
+     */
+    void replaceOrAppendElement(in AString aName, in nsIVariant aValue);
+
+    /**
+     * Append a string
+     */
+     void appendString(in AString aName, in AString aValue);
+
+     /**
+      * Append a long
+      */
+     void appendLong(in AString aName, in long aValue);
+
+     /**
+      * Append a property list
+      */
+     void appendPropertyList(in AString aName, in msqIPropertyList aValue);
+
+     /**
+      * Append a boolean
+      */
+     void appendBoolean(in AString aName, in boolean aValue);
+
+    /**
+     * removeElementAt()
+     *
+     * Remove an element at a specific position, moving all elements
+     * stored at a higher position down one.
+     * To remove a specific element, use indexOf() to find the index
+     * first, then call removeElementAt().
+     *
+     * @param index the position of the item
+     *
+     */
+    void removeElementAt(in unsigned long aIndex);
+
+    /// remove an element by name
+    void removeElement(in AString aName);
+
+    /**
+     * replaceElementAt()
+     *
+     * Replace the element at the given position.
+     *
+     * @param index   The position in the array
+     *                If the position is lower than the current length
+     *                of the array, an existing element will be replaced.
+     *                If the position is equal to the current length
+     *                of the array, the new element is appended.
+     *                If the position is higher than the current length
+     *                of the array, empty elements are appended followed
+     *                by the new element at the specified position.
+     *                An index lower than 0 is invalid and will be ignored.
+     */
+    void replaceElementAt(in unsigned long aIndex, in AString aName, in nsIVariant aValue);
+
+    /**
+     * clear()
+     *
+     * clear the entire array, releasing all stored objects
+     */
+    void clear();
+
+    /// how many values exist for this name?
+    unsigned long getCountForName(in AString aName);
+
+    // get the first value for a particular name
+    nsIVariant getValue(in AString aName);
+
+    // get the first value for a particular name, as a property list
+    msqIPropertyList getPropertyList(in AString aName);
+
+    // get the first value for a particular name, as an AString. Return blank if does not exist
+    AString getAString(in AString aName);
+
+    // set (appending if needed) the first value for a particular name, as a string
+    void setAString(in AString aName, in AString aValue);
+
+    // get the first value for a particular name, as an integer
+    long getLong(in AString aName);
+
+    // set (appending if needed) the first value for a particular name, as an integer
+    void setLong(in AString aName, in long aValue);
+
+    // get the first value for a particular name, as a boolean
+    boolean getBoolean(in AString aName);
+
+    // set (appending if needed) the first value for a name, as a boolean
+    void setBoolean(in AString aName, in boolean aValue);
+
+    // get an array of nsIVariant values with the same name
+    nsIArray getValues(in AString aName);
+
+    // get an array of msqIPropertyList values with the same name
+    nsIArray getPropertyLists(in AString aName);
+
+    // get a property list that matches a certain name, as well as has an attribute with
+    //  a particular value.
+    msqIPropertyList getPropertyListByAttribute(in AString aName, in AString aAttribute,
+                                                in AString aValue);
+
+    nsIVariant getValueAt(in unsigned long aIndex);
+
+    AString getNameAt(in unsigned long aIndex);
+
+    msqIPropertyList getPropertyListAt(in unsigned long aIndex);
+
+    long indexOf(in AString aName);
+
+    /// clone a property list, excluding certain fields
+    msqIPropertyList clone([optional] in msqIStringArray aExclude);
+
+    // get a string representation, "Property List Object Notation", similar to JSON
+    // (set populates a list from the string PLON)
+    attribute AString PLON;
+
+    /// set an attribute
+    void setAttribute(in AString aName, in AString aValue);
+};
+
+%{ C++
+#include "msqNativeCID.h"
+#define MSQ_PROPERTY_LIST_CID                          \
+{ /* 7EAB9CCB-F6F4-4625-8923-A4A1CC3E3976 */          \
+ 0x7EAB9CCB, 0xF6F4, 0x4625,                          \
+{0x89, 0x23, 0xa4, 0xa1, 0xcc, 0x3e, 0x39, 0x76}}
+%}

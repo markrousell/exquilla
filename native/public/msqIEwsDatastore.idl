@@ -1,0 +1,88 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeItem;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeAttachment;
+interface msqIEwsEventListener;
+interface nsIFile;
+
+[scriptable, uuid(7C885E03-5025-4c9c-8196-AA08026681C0)]
+interface msqIEwsDatastore : nsISupports
+{
+  /**
+   *  Provides C++ access to the datastore.js module
+   */
+    /// Access functions for the itemMetadata and query table
+  /// Save a native item in the datastore
+  void putItem(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// Get a native item from the datastore. If the listener is null, then perform sync.
+  void getItem(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+   /// save an item's body
+  void putBody(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// change the id of an item
+  void changeIdMeta(in AString aOldId, in AString aNewId, in msqIEwsEventListener aListener);
+
+    /// access functions for the body table
+  /// get an item's body
+  void getBody(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// delete an item's body
+  void deleteBody(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// change the id of an item
+  void changeIdBody(in AString oldId, in AString newId, in msqIEwsEventListener aListener);
+
+    /// Access function for the dl expansion table
+  /// save an item's distribution list
+  void putDlExpansion(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// get an item's distribution list
+  void getDlExpansion(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// delete an item's distribution list
+  void deleteDlExpansion(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+
+  /// change the id of an item
+  void changeIdDl(in AString oldId, in AString newId, in msqIEwsEventListener aListener);
+
+  /// Delete a native item from the datastore. If the listener is null, then perform sync.
+  void deleteItem(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aListener);
+  void deleteItemById(in AString aItemId, in msqIEwsEventListener aListener);
+
+  /// Get a list of item ids in a folder. Results are returned as an msqIStringArray in the data
+  ///  field of the completion callback.
+  void getIdsForFolder(in AString aFolderId, in msqIEwsEventListener aListener);
+  void getIdsForParent(in AString aParentId, in msqIEwsEventListener aListener);
+  void changedOnFolder(in AString aFolderId, in msqIEwsEventListener aListener);
+
+  /// Get/put the folder's syncState. The syncState should correspond to the state of this
+  ///  entire datastore. Return value is only valid for sync version. In async, get the value
+  ///  from the data of the callback, as an nsISupportsString
+  void setSyncState(in msqIEwsNativeFolder aNativeFolder, in AString aSyncState, in msqIEwsEventListener aListener);
+  AString getSyncState(in msqIEwsNativeFolder aNativeFolder, in msqIEwsEventListener aListener);
+
+  /// delete a folder's metadata from the datastore
+  void deleteDataFromFolder(in AString aFolderId, in msqIEwsEventListener aListener);
+
+  /// Close the database connection
+  void asyncClose(in msqIEwsEventListener aListener);
+
+  /// Initialize the connection
+  void open(in nsIFile dbDirectory);
+
+};
+

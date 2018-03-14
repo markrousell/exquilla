@@ -1,0 +1,92 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeServer;
+interface msqIEwsNativeMailbox;
+interface msqIStringArray;
+interface msqIEwsNativeItem;
+interface nsIMutableArray;
+
+[scriptable, uuid(EC60E4FC-9379-4513-97A9-70288A9CA52D)]
+interface msqIEwsNativeFolder : nsISupports
+{
+  /**
+   * This interface provides a local representation of a folder
+   *  as described by the EWS data model.
+   */
+  // because of caching, only the owning msqEwsNativeMailbox should set
+  // the folderId of a native folder
+  attribute AString folderId;
+  attribute AString distinguishedFolderId;
+  attribute AString parentFolderId;
+  attribute AString displayName;
+  attribute long unreadCount;
+  attribute long totalCount;
+  attribute long childFolderCount;
+  attribute AString folderClass;
+  attribute AString searchParameters;
+  attribute AString managedFolderInformation;
+  attribute AString changeKey;
+  attribute AString syncState;
+  attribute boolean hidden;
+  /// This is set when an online soap request confirms that this folder exists
+  attribute boolean verifiedOnline;
+  // did the last sync still have items remaining?
+  attribute boolean syncItemsPending;
+
+  readonly attribute msqIStringArray subfolderIds;
+
+  // Is this folder a subfolder of deleteditems?
+  readonly attribute boolean isDeleted;
+
+  attribute msqIEwsNativeMailbox mailbox;
+
+  // This array of msqIEwsNativeItem objects are new items in the folder from a copy,
+  //  that have not been persisted, and do not match the sync state
+  attribute nsIMutableArray newItems;
+
+  /// folderURI provides the glue to the local folder
+  attribute AUTF8String folderURI;
+
+  /// get a sync item property name by index
+  /// exception NS_ERROR_ILLEGAL_VALUE when out of range
+  //AString getSyncItemPropertyName(in unsigned long aIndex);
+
+  /**
+   * Get property names of an item. This is dependent on the
+   * IPM class of the object. This is a service function
+   * that is not dependent on the properties of the folder,
+   * so should probably not be in this class.
+   */
+  msqIStringArray getItemPropertyNames(in AString ipmClass);
+
+  /**
+   * Does this folder store bodies in the property list?
+   */
+  boolean itemHasBodyProperty(in AString ipmClass);
+
+  /// get an item by id
+  msqIEwsNativeItem getItem(in AString aItemId);
+
+  /// create an item (deprecated, use the mailbox method instead)
+  msqIEwsNativeItem createItem(in AString aItemId, in AString aItemClass);
+
+  msqIEwsNativeFolder getSubfolderNamed(in AString name);
+
+};
+
+%{C++
+#define MSQEWSNATIVEFOLDER_CONTRACTID "@mesquilla.com/ewsnativefolder;1"
+// the js form of native folder
+#define MSQEWSNATIVEFOLDER_CONTRACTID_JS "@mesquilla.com/ewsnativefolder;2"
+#define MSQEWSNATIVEFOLDER_CLASSNAME "Exchange Web Services Native Folder"
+%}

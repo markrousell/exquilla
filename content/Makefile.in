@@ -1,0 +1,51 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla.
+# *
+# * Copyright 2010 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+# */
+
+DEPTH     = @DEPTH@
+topsrcdir = @top_srcdir@
+srcdir    = @srcdir@
+VPATH     = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+include $(topsrcdir)/config/rules.mk
+
+_CONTENT_FILES = \
+                 exquilla.js \
+                 messengerOverlay.xul \
+                 AccountManagerOverlay.js \
+                 AccountManagerOverlay.xul \
+                 ewsAccountWizard.xul \
+                 ewsAccountWizard.js \
+                 am-exquillaserver.xul \
+                 am-exquillaserver.js \
+                 messengerComposeOverlay.xul \
+                 messengerComposeOverlay.js \
+                 addressbookOverlay.xul \
+                 addressbookOverlay.js \
+                 folderPropsOverlay.xul \
+                 folderPropsOverlay.js \
+                 am-mainOverlay.xul \
+                 am-mainOverlay.js \
+                 am-identityOverlay.xul \
+                 am-identityOverlay.js \
+                 preferencesOverlay.xul \
+                 preferencesOverlay.js \
+                 mwoOverlay.js \
+                 mwoOverlay.xul \
+                 msgHVOoverlay.xul \
+                 msgHVOoverlay.js \
+                 msgAccountCentralOverlay.xul \
+                 moreinfo.xul \
+                 $(NULL)
+
+libs:: $(_CONTENT_FILES)
+		$(INSTALL) $(foreach f,$^,"$f") $(DIST)/xpi-stage/exquilla/content

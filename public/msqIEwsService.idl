@@ -1,0 +1,28 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeFolder;
+interface nsIAbDirectory;
+
+[scriptable, uuid(7A1BAD15-050B-4152-B0FD-7E9FD54879D2)]
+interface msqIEwsService : nsISupports
+{
+  // Exchange Web Services service
+
+  /// commonly used strings, see definitions in C++ section
+
+  readonly attribute AString messages2006;
+  readonly attribute AString types2006;
+
+  // Add an addressbook given a Contacts native folder.
+  nsIAbDirectory addAbFromNativeContactFolder(in msqIEwsNativeFolder aNativeFolder);
+};

@@ -1,0 +1,4 @@
+.tabmail-tab[type="folder"][IsServer="true"][ServerType="exquilla"],
+treechildren::-moz-tree-image(folderNameCol, isServer-true, serverType-exquilla) {
+  list-style-image: url("chrome://exquilla/skin/letter-x-icon-16.png");
+}

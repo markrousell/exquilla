@@ -1,0 +1,43 @@
+<m:ResolveNamesResponse xmlns:m="http://schemas.microsoft.com/exchange/services/2006/messages" xmlns:t="http://schemas.microsoft.com/exchange/services/2006/types">
+<m:ResponseMessages>
+<m:ResolveNamesResponseMessage ResponseClass="Success">
+<m:ResponseCode>NoError</m:ResponseCode>
+<m:ResolutionSet TotalItemsInView="1" IncludesLastItemInRange="true">
+<t:Resolution>
+<t:Mailbox>
+<t:Name>Ilia Rogov</t:Name>
+<t:EmailAddress>Ilia_Rogov@epam.com</t:EmailAddress>
+<t:RoutingType>SMTP</t:RoutingType>
+<t:MailboxType>Mailbox</t:MailboxType>
+</t:Mailbox>
+<t:Contact>
+<t:DisplayName>Ilia Rogov</t:DisplayName>
+<t:Culture>en-US</t:Culture>
+<t:GivenName>Ilia</t:GivenName>
+<t:CompanyName>EPAM Russia</t:CompanyName>
+<t:EmailAddresses>
+<t:Entry Key="EmailAddress1">smtp:58173@epam.com</t:Entry>
+<t:Entry Key="EmailAddress2">SMTP:Ilia_Rogov@epam.com</t:Entry>
+</t:EmailAddresses>
+<t:PhysicalAddresses>
+<t:Entry Key="Business">
+<t:City>Saint-Petersburg</t:City>
+<t:CountryOrRegion>Russia</t:CountryOrRegion>
+<t:PostalCode>EPRUPETW0417</t:PostalCode>
+</t:Entry>
+</t:PhysicalAddresses>
+<t:PhoneNumbers>
+<t:Entry Key="BusinessPhone">58173</t:Entry>
+<t:Entry Key="MobilePhone">+7 000-000-00-00</t:Entry>
+</t:PhoneNumbers>
+<t:ContactSource>ActiveDirectory</t:ContactSource>
+<t:JobTitle>Senior Software Engineer</t:JobTitle>
+<t:Manager>Vladimir Soldatov</t:Manager>
+<t:OfficeLocation>Voronezhskaya, 5-302</t:OfficeLocation>
+<t:Surname>Rogov</t:Surname>
+</t:Contact>
+</t:Resolution>
+</m:ResolutionSet>
+</m:ResolveNamesResponseMessage>
+</m:ResponseMessages>
+</m:ResolveNamesResponse>

@@ -1,0 +1,106 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsEventListener;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeItem;
+interface msqIEwsNativeAttachment;
+interface msqIStringArray;
+interface nsIVariant;
+interface nsIMutableArray;
+interface nsIFile;
+interface msqIPropertyList;
+
+/**
+ *  Represents an interface to a state machine, typically used
+ *   to sequence needed soap requests, and to maintain the state
+ *   of the request. Running a mailnews URL
+ *   from a component implementing nsIMsgMessageService will
+ *   typically setup a single instance of this to manage the
+ *   sequence of actions to complete the URL.
+ */
+
+[scriptable, uuid(3182662F-5ECA-480d-8655-E3FBACC94DF3)]
+interface msqIEwsMachine : nsISupports
+{
+  /// generic read of machine attributes
+  nsIVariant getProperty(in ACString name);
+
+  /// listener for events, mostly onStopMachine for end
+  attribute msqIEwsEventListener listener;
+
+  /// abort the current machine. (Partially implemented).
+  void abort();
+
+  /// is the current machine aborted?
+  readonly attribute boolean isAborted;
+
+  void checkOnline(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener);
+  void discoverFolders(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener);
+  void createSubfolder(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                       in msqIEwsNativeFolder aParentFolder, in msqIEwsNativeFolder aChildFolder);
+  void invalidType(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                   in long aClass);
+  void generateError(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener);
+  void getItemBody(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                   in msqIEwsNativeItem aNativeItem);
+  void getAttachmentContent(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                            in msqIEwsNativeAttachment aAttachment);
+  void copyItems(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                 in msqIEwsNativeFolder aDstFolder, in msqIStringArray aItemIds, in boolean aIsMove);
+  void deleteSubfolders(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                        in msqIStringArray aFoldersIds, in boolean aMoveToDeletedItems);
+  void deleteItems(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                   in msqIStringArray aItemIds, in boolean aMoveToDeletedItems);
+  void discoverSubfolders(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                          in msqIEwsNativeFolder aNativeFolder);
+  void getItemsMimeContent(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                           in nsIMutableArray aItems);
+  void createMessageFromString(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                             in AString aMessage, in msqIEwsNativeFolder aFolder, in msqIPropertyList aProperties);
+  void createMessageFromFile(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                             in nsIFile aFile, in msqIEwsNativeFolder aFolder, in msqIPropertyList aProperties);
+  void moveSubfolders(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                      in msqIStringArray aSourceFolderIds, in msqIEwsNativeFolder aDestFolder);
+  void saveNewItem(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                   in msqIEwsNativeItem aNativeItem);
+  void updateItemProperties(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                            in msqIEwsNativeItem aItem, in msqIPropertyList aProperties);
+  void updateManyItems(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                       in nsIMutableArray aNativeItems);
+  void getNewItems(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                   in msqIEwsNativeFolder aFolder, in boolean aGetAttachments);
+  void getItemOffline(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                      in msqIEwsNativeItem aItem);
+
+  void allIds(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+              in AString aFolderId);
+  /// send an already created item
+  void sendItem(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                in msqIEwsNativeItem aNativeItem,
+                in boolean aSaveItem,
+                in AString aSavedItemFolderId);
+  void resolveNames(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                    in AString aEntry, in boolean aReturnFullContactData);
+  void getAllServerIds(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                       in msqIEwsNativeFolder aNativeFolder);
+  void testInitial(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener);
+
+  void getFolder(in msqIEwsNativeMailbox aMailbox, in msqIEwsEventListener aListener,
+                 in msqIEwsNativeFolder aFolder);
+};
+
+%{C++
+#define MSQEWSMACHINE_CONTRACTID_JS "@mesquilla.com/ewsmachine;2"
+#define MSQEWSMACHINE_CLASSNAME "Exchange Web Services Native State Machine"
+%}

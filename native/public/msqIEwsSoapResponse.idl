@@ -1,0 +1,45 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+
+interface msqIEwsSoapRequest;
+
+[scriptable, uuid(4C2D2012-0EC7-4c0e-A8F5-A28FF2562430)]
+interface msqIEwsSoapResponse : nsISupports
+{
+  // perhaps I should implement nsIRequestObserver, but I am just
+  // going to do my own version with the same structure, but
+  // slightly different variable types. Maybe this will just be confusing
+  // though? I'm hoping someday to make this completely compatible.
+
+  void onStartRequest(in msqIEwsSoapRequest aRequest,
+                      in nsISupports aContext);
+
+  // Notifications, typically from streaming notifications. aData then is a modified native folder.
+  void onNotify(in msqIEwsSoapRequest aRequest,
+                in nsISupports aData,
+                in nsresult aStatus);
+
+  void onStopRequest(in msqIEwsSoapRequest aRequest,
+                     in nsISupports aContext,
+                     in nsresult aStatusCode);
+
+  /**
+   * Specifically note an error to the callback. Request will
+   *  still give onStopRequest when done.
+   */
+  void errorResponse(in msqIEwsSoapRequest aRequest,
+                     in nsISupports aContext,
+                     in AString aResponseError, // Error description from EwsSoapRequest 
+                     in AString aResponseCode,   // ResponseCode element
+                     in AString aMessageText);   // MessageText element
+};

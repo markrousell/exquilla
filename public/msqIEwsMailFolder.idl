@@ -1,0 +1,92 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+#include "nsISupports.idl"
+interface nsIMsgWindow;
+interface nsIUrlListener;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeMailbox;
+interface nsIArray;
+interface nsIMutableArray;
+interface nsIMsgCopyServiceListener;
+interface nsIMsgFolder;
+interface msqIEwsEventListener;
+interface nsIMsgDatabase;
+
+// {6254825F-D106-4661-819E-0B74263BB5F3}
+[scriptable, uuid(6254825F-D106-4661-819E-0B74263BB5F7)]
+interface msqIEwsMailFolder : nsISupports
+{
+  readonly attribute msqIEwsNativeMailbox nativeMailbox;
+
+  // force creation and initialization of native folder
+  void initNativeFolder();
+
+  /**
+   *  Extends nsIMsgFolder to include EWS-specific issue
+   */
+
+  void updateFolderWithListener(in nsIMsgWindow aMsgWindow, in nsIUrlListener aListener);
+
+  /**
+   * The EWS folderId for this folder. This value is stored locally to allow
+   *  mapping a local file location to an EWS location
+   */
+  attribute AString folderId;
+  attribute AString distinguishedFolderId;
+
+  /// has this folder been confirmed as existing online?
+  attribute boolean verifiedAsOnlineFolder;
+
+  /// given an up-to-date native folder, update a mail folder and its children.
+  void updateFromNative(in msqIEwsNativeFolder nativeFolder);
+
+  /// resync the msgdb from the native db
+  void resyncFromNative(in bool aFixProblems, in nsIUrlListener aListener);
+
+  /// get the Skink key from an EWS itemId
+  unsigned long keyFromId(in AString aItemId);
+
+  /// get the itemId from the Skink key
+  AString idFromKey(in unsigned long aKey);
+
+  /// recalculate the key/itemid mapping
+  void remap(in bool aExpunge);
+
+  /// reindex the skink database from the local datastore
+  void reindex(in nsIMsgWindow aWindow, in nsIUrlListener aListener);
+
+  /// Delete local representation of messages
+  void deleteLocalMessages(in nsIArray aMessages);
+
+  /// Copy local messages from one folder to this one
+  void copyLocalMessages(in nsIArray aSrcMessages, in nsIMutableArray aDestMessages,
+                         in nsIArray aNewItems);
+
+  /// number of new native messages that have not been reported to skink
+  attribute long numNewNativeMessages;
+
+  void copyFolderLocal(in nsIMsgFolder srcFolder, in boolean isMove,
+                       in nsIMsgWindow msgWindow, in nsIMsgCopyServiceListener listener);
+
+  // srcSupport is either an nsIFile or nsIMsgFolder
+  void onCopyCompleted(in nsISupports srcSupports, in nsresult aResult);
+
+    // temporary methods needed only during transition
+
+  // update keyFromId to add a new value
+  void putKeyFromId(in unsigned long key, in AString itemId);
+  // remove value from keyFromId
+  void removeKeyFromId(in AString itemId);
+  // clear
+  void clearKeyFromId();
+
+};
+

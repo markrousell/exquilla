@@ -1,0 +1,210 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsSoapResponse;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeItem;
+interface msqIEwsNativeAttachment;
+interface msqISOAPResponse;
+interface msqISOAPCall;
+interface msqIPropertyList;
+interface nsIMutableArray;
+interface nsIArray;
+interface msqIStringArray;
+interface nsIDOMElement;
+
+[scriptable, uuid(16BD89B4-CD63-4804-9270-D0A530480555)]
+interface msqIEwsSoapRequest : nsISupports
+{
+  /**
+   *  Provides interface to Exchange Web Services soap calls
+   */
+
+  // Has this request been invoked?
+  readonly attribute boolean inProgress;
+
+  // Has this request been aborted?
+  readonly attribute boolean isAborted;
+
+  // abort the request
+  void abort();
+
+  /// server with info like URI, user, etc.
+  attribute msqIEwsNativeMailbox mailbox;
+
+  // these items can be useful in debugging
+
+  /// soap subsystem response handler
+  attribute msqISOAPResponse soapResponse;
+
+  /// request message
+  readonly attribute msqISOAPCall soapCall;
+
+  /// decoding result. Only included for certain request types with a single response.
+  attribute msqIPropertyList result;
+
+  /// request name
+  attribute ACString requestName;
+
+  /// set this to non-zero to generate certain types of errors for testing
+  attribute unsigned long doError;
+
+  void getFolder(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aNativeFolder);
+
+  // just does getFolder of the root folder
+  void getOnline(in msqIEwsSoapResponse aResponse);
+
+  void getFolders(in msqIEwsSoapResponse aResponse,
+                  in nsIArray aNativeFolders); // msqIEwsNativeFolders
+
+  void createFolder(in msqIEwsSoapResponse aResponse,
+                    in msqIEwsNativeFolder aParentFolder,
+                    in msqIEwsNativeFolder aChildFolder);
+
+  void createFolders(in msqIEwsSoapResponse aResponse,
+                     in msqIEwsNativeFolder aParentFolder,
+                     in nsIArray aNativeFolders);
+
+  void deleteFolder(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aNativeFolder,
+                 in boolean aMoveToDeletedItems);
+
+  void deleteFolders(in msqIEwsSoapResponse aResponse,
+                 in msqIStringArray aFolderIds,
+                 in boolean aMoveToDeletedItems);
+
+  void moveFolders(in msqIEwsSoapResponse aResponse,
+                   in msqIStringArray aSourceFolderIds,
+                   in msqIEwsNativeFolder aDestFolder);
+
+  // Gets information from all folders that are children of
+  //  aNativeFolder, including their children. Stores results
+  //  in the folder cache, creating new nativeFolder
+  //  objects if needed.
+  //
+  // Set aMaxEntriesReturned to 0 for unlimited.
+  void discoverSubfolders(in msqIEwsSoapResponse aResponse,
+                          in msqIEwsNativeFolder aNativeFolder,
+                          in long aMaxEntriesReturned,
+                          in long aOffset);
+
+  /// sync folder as of a particular sync state, returning a list of changed items.
+  void syncFolderItemsProperties(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aNativeFolder,
+                 in AString aSyncState,
+                 in nsIMutableArray aItems, // array of msqIEwsNativeItem
+                 in long aMaxChangesReturned);
+
+  /// generate an error for testing purposes
+  void generateError(in msqIEwsSoapResponse aResponse);
+
+  /// get items properties that are changed on server
+  // Warning: this method will only update items with the same item class
+  //          as the first item in the list. You will need to call it multiple
+  //          times if different item types are being stored in a folder.
+  void getChangedItemProperties(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aNativeFolder,
+                 in msqIStringArray aItemIds,
+                 in bool getBody);
+
+  /// get item bodies in default format
+  void getItemBodies(in msqIEwsSoapResponse aResponse,
+                 in nsIMutableArray aNativeItems); // array of msqIEwsNativeItem objects
+
+  /// get mime content for items
+  void getItemsMimeContent(in msqIEwsSoapResponse aResponse,
+                           in nsIMutableArray aNativeItems); // array of msqIEwsNativeItem objects
+
+  // update an item on server using saved Updates PL in localProperties
+  void saveUpdates(in msqIEwsSoapResponse aResponse,
+                   in msqIEwsNativeItem aNativeItem);
+  // update an item on server using saved Updates PL in localProperties
+  void saveManyUpdates(in msqIEwsSoapResponse aResponse,
+                       in nsIMutableArray aNativeItems);
+
+  /// create an item.
+  void createItem(in msqIEwsSoapResponse aResponse,
+                  in msqIEwsNativeItem aNativeItem,
+                  in AString aMessageDisposition);
+
+  /// send an already created item.
+  ///   aSaveFolder: if true, save the item after sending
+  ///   aSaveFolderId: folderId of folder to save to (or default if blank)
+  void sendItem(in msqIEwsSoapResponse aResponse,
+                in msqIEwsNativeItem aNativeItem,
+                in boolean aSaveItem,
+                in AString aSavedItemFolderId);
+
+  /// get the content of an attachment
+  void getAttachment(in msqIEwsSoapResponse aResponse,
+                     in msqIEwsNativeAttachment aNativeAttachment);
+
+  /// copy or move items
+  void copyItems(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aDstFolder,
+                 in msqIStringArray aItemIds,
+                 in boolean isMove);
+
+  /// delete items
+  void deleteItems(in msqIEwsSoapResponse aResponse,
+                   in msqIStringArray aItemIds,
+                   in boolean aMoveToDeletedItems);
+
+  /// delete deleted occurrences
+  void deleteDeletedOccurrences(in msqIEwsSoapResponse aResponse,
+                   in msqIEwsNativeItem aItem,
+                   in boolean aMoveToDeletedItems);
+
+  void createAttachment(in msqIEwsSoapResponse aResponse,
+                        in msqIEwsNativeAttachment aNativeAttachment);
+
+  /// expand a distribution list
+  void expandDL(in msqIEwsSoapResponse aResponse,
+                in msqIEwsNativeItem aItem);
+
+  // resolve names from GAL and local contacts
+  void resolveNames(in msqIEwsSoapResponse aResponse,
+                    in AString aEntry,
+                    in boolean aReturnFullContactData);
+
+  // Return all item ids in the folder.
+  void getAllIds(in msqIEwsSoapResponse aResponse,
+                 in msqIEwsNativeFolder aFolder,
+                 in long aOffset,
+                 in long aMaxItems);
+
+  // Subscribe to folder event notifications
+  void subscribeNotifications(in msqIEwsSoapResponse aResponse,
+                              in nsIArray aNativeFolders,
+                              in boolean checkAll);
+
+  // Unsubscribe from folder event notifications
+  void unsubscribeNotifications(in msqIEwsSoapResponse aResponse,
+                                in string aSubscriptionId);
+
+  // Get folder event notifications
+  void getNotifications(in msqIEwsSoapResponse aResponse,
+                        in string aSubscriptionId,
+                        in long aTimeout);
+
+  /// Begin the execution of the soap call
+  void invoke();
+
+  /// the response handler
+  attribute msqIEwsSoapResponse ewsResponse;
+
+  /// helper function for logging
+  void logElement(in AString aTitle, in nsIDOMElement aElement);
+
+};

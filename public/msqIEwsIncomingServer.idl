@@ -1,0 +1,142 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsSoapRequest;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeItem;
+interface msqIEwsMailFolder;
+interface msqIStringArray;
+interface nsIUrlListener;
+interface nsIMsgWindow;
+interface nsIURI;
+interface nsIFile;
+interface nsIMsgHeaderSink;
+interface nsIMsgDBHdr;
+interface nsIMsgFolder;
+
+[scriptable, uuid(A041EAA4-A795-4fd3-A9ED-9CC7AB91A3FB)]
+interface msqIEwsIncomingServer : nsISupports
+{
+
+  /// get the native mailbox associated with this server's account
+  readonly attribute msqIEwsNativeMailbox nativeMailbox;
+
+  /// the ews url to access this account
+  attribute ACString ewsURL;
+
+  // These 3 use ... attributes are only needed to work cleanly with the account wizard and manager
+  /// is the address book used with this server
+  attribute boolean useAB;
+
+  /// is the calendar used with this server
+  attribute boolean useCalendar;
+
+  /// is the mail used with this server
+  attribute boolean useMail;
+
+  /// is the domain used to login to server (if any)
+  attribute ACString domain;
+
+  /// this gets called when the server is expanded in the folder pane
+  void performExpandAsync(in nsIMsgWindow aMsgWindow, in nsIUrlListener aUrlListener);
+
+  /// update folders from native
+  void reconcileFolders();
+
+  /// get a native folder from a mail folder.
+  msqIEwsNativeFolder getNativeFolder(in msqIEwsMailFolder aMailFolder);
+
+  /// manage soap errors. This is intended to be the colonial-layer error
+  /// management, after the machine already reported the raw error.
+  void processFault(in nsISupports aItem, in ACString aEvent,
+                    in nsISupports aData, in nsresult result);
+
+  // soap calls
+
+  /// get the message body
+  nsIURI fetchMessage(in msqIEwsNativeItem aItem,
+                      in nsISupports aDisplayConsumer,
+                      in nsIUrlListener aUrlListener);
+
+  /// create a subfolder
+  void createSubfolder(in nsIMsgFolder aFolder,
+                       in AString name);
+
+  void createSubfolderWithListener(in nsIUrlListener aUrlListener,
+                                   in nsIMsgFolder aParentFolder,
+                                   in AString aName);
+
+  /// delete subfolders
+  // Because the underlying Skink protocol does not have any notification when a folder
+  // delete is fully completed, add an observer with topic exquilla.folderDeleted and
+  // subject the nsIMsgFolder reference for the delete.
+  void deleteSubfolders(in msqIStringArray aFolderIds);
+
+  void saveAttachment(in ACString contentType, in ACString url, in ACString displayName,
+                      in ACString messageUri, in boolean isExternalAttachment);
+
+  void setupSoapLogging(in msqIEwsNativeMailbox aMailbox);
+  readonly attribute nsIFile soapLogFile;
+
+  // Download all attachments locally (if needed), and report those attachments
+  //  to a header sink. Generates header sink calls handleAttachment
+  //  and OnEndAllAttachments.
+  void getAllAttachments(in nsIMsgDBHdr aMessage,
+                         in nsIMsgHeaderSink aHeaderSink);
+
+  // Is the server unavailable? 0: available
+  //                            1: checked and online but unlicensed
+  //                            2: checked and offline
+  //                            3: unchecked
+  //
+  readonly attribute unsigned long unavailable;
+
+  // the email address for the server from the related identity
+  readonly attribute ACString email;
+
+  const unsigned long AVAILABLE = 0;
+  const unsigned long UNLICENSED = 1;
+  const unsigned long OFFLINE = 2;
+  const unsigned long UNCHECKED = 3;
+
+  /**
+   * Get the password from the nsIMsgIncomingServer. May prompt the user
+   * if there's no password in the password manager or cached in the 
+   * server object.
+   * @return Password string.
+   * @exception NS_ERROR_FAILURE  The password could not be obtained.
+   * @note NS_MSG_PASSWORD_PROMPT_CANCELLED is a success code that is returned
+   *       if the prompt was presented to the user but the user cancelled the
+   *       prompt.
+   */
+  ACString promptPassword();
+
+  // When skink first creates folders, all it knows is the folder URI which it
+  // gets from the placeholder filename. We need to set at that point the folder
+  // name, which can vary from the URI. I tried the folderCache, but I got
+  // shutdown crashes. So I implement my own method, which is a JSON file that
+  // maps file URI to name. The following methods interface to that.
+  AString getDisplayName(in string aFolderURI);
+  void setDisplayName(in string aFolderURI, in AString name);
+
+};
+
+%{C++
+enum UnavailableType
+{
+  UAT_AVAILABLE = 0,
+  UAT_UNLICENSED = 1,
+  UAT_OFFLINE = 2,
+  UAT_UNCHECKED = 3
+};
+%}

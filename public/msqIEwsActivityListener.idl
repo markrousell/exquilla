@@ -1,0 +1,65 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+ 
+#include "nsISupports.idl"
+interface msqIEwsNativeFolder;
+interface nsIMsgFolder;
+
+[scriptable, uuid(7B3C3A99-978E-4a04-BC23-43D6BA96FE85)]
+interface msqIEwsActivityListener : nsISupports {
+  /**
+   * Notification that a folder sync has started.
+   *
+   * @param aFolder folder in which the download is started.
+   */
+  void onDownloadStarted(in msqIEwsNativeFolder aFolder);
+
+  /**
+   * Notification about download progress.
+   *
+   * @param aFolder folder in which the download is happening, native or skink
+   * @param aNumDownloaded number of the messages that have been downloaded.
+   * @param aTotalToDownload total number of messages to download.
+   */
+  void onDownloadProgress(in nsISupports aFolder,
+                          in unsigned long aNumDownloaded,
+                          in unsigned long aTotalToDownload);
+
+  /**
+   * Notification that a download has completed.
+   *
+   * @param aFolder folder to which the download has completed.
+   * @param aNumberOfMessages number of the messages that were downloaded.
+   */
+  void onDownloadCompleted(in msqIEwsNativeFolder aFolder,
+                           in unsigned long aNumberOfMessages);
+ 
+  /**
+   * Notification that a previously started downloaded was aborted.
+   * @param aFolder folder to which the download has completed.
+   */
+  void onDownloadAborted(in msqIEwsNativeFolder aFolder);
+
+  /**
+   * Notification that a copy or move is starting
+   */
+  void onCopyStarted(in nsIMsgFolder aFolder, in unsigned long aNumberOfMessages, in boolean aIsMove);
+
+  /**
+   * Put a string to the status bar
+   */
+  void showStatus(in AString aMessage);
+
+  /**
+   * Send generic failure message
+   */
+  void showFailed();
+};

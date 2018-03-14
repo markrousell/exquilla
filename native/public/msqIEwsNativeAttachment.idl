@@ -1,0 +1,54 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface nsIFile;
+interface msqIEwsNativeMailbox;
+interface msqIEwsNativeItem;
+
+[scriptable, uuid(82CFE1B4-6E3D-48e0-BD1E-F3E9DFAD777E)]
+interface msqIEwsNativeAttachment : nsISupports
+{
+  /**
+   * This interface provides a local representation of an attachment
+   *  as described by the EWS data model.
+   */
+
+  /// SOAP-defined attributes
+  attribute AString attachmentId;
+  attribute AString name;
+  attribute AString contentType;
+  attribute AString contentId;
+  // only available in Exchange 2010 or later
+  readonly attribute AString size;
+
+  /// local file where the attachment is stored, stored in ContentLocation
+  attribute ACString fileURL;
+
+  /// has this attachment been downloaded?
+  readonly attribute boolean downloaded;
+
+  // Typically only set during initialization.
+  attribute msqIEwsNativeItem parentItem;
+
+  // This should only be set by the native item when creating the attachment
+  attribute boolean isFileAttachment;
+};
+
+%{C++
+
+#define MSQEWSNATIVEATTACHMENT_CID \
+{ 0x9345df3a, 0xf51, 0x4dfd, { 0xb0, 0x83, 0xf1, 0x58, 0x1d, 0x9f, 0xdc, 0x5e } }
+
+#define MSQEWSNATIVEATTACHMENT_CONTRACTID "@mesquilla.com/ewsnativeattachment;1"
+
+%}
+

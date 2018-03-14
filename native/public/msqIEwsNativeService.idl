@@ -1,0 +1,42 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeMailbox;
+interface nsIDOMWindow;
+interface nsILoginInfo;
+
+[scriptable, uuid(00FAE384-2497-40f5-AEE9-8B6EF9183643)]
+interface msqIEwsNativeService : nsISupports
+{
+  /**
+   * This interface provides global functions associated
+   *  with management of Exchange Web Services native
+   *  objects.
+   */
+
+  /**
+   *  Get the (possibly cached) native mailbox for a given server.
+   *
+   *  @param aServerURI  The uri for the server. Format does not really matter,
+   *                     but by convention this is exquilla://username@domain.com
+   */
+  msqIEwsNativeMailbox getNativeMailbox(in ACString aServerURI);
+
+  /// prompt user for password
+  boolean promptUsernameAndPassword(in nsIDOMWindow window, in nsILoginInfo aLoginInfo);
+
+  // get (but don't create) a mailbox
+  msqIEwsNativeMailbox getExistingMailbox(in ACString aServerURI);
+
+  // remove a mailbox from cache, typically because created with an invalid or temp URI
+  void removeNativeMailbox(in msqIEwsNativeMailbox aMailbox);
+};

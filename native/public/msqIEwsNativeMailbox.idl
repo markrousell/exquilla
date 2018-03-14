@@ -1,0 +1,363 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeFolder;
+interface msqIEwsNativeItem;
+interface msqIEwsNativeAttachment;
+interface msqIEwsMachine;
+interface msqIEwsEventListener;
+interface msqIEwsSoapRequest;
+interface msqIStringArray;
+interface msqIEwsDatastore;
+interface nsIMutableArray;
+interface msqIEwsActivityListener;
+interface nsIFile;
+interface msqIPropertyList;
+interface nsIDOMWindow;
+
+[scriptable, uuid(367A9160-B2D9-4c1a-8B54-47444269AB9D)]
+interface msqIEwsNativeMailbox : nsISupports
+{
+  /**
+   * This interface provides a local representation of an
+   *  Exchange mailbox.
+   */
+
+  /// name used to login to the server
+  attribute ACString username;
+
+  /// domain use to login to the server
+  attribute ACString domain;
+
+  /// cleartext version of the password
+  attribute ACString password;
+
+  /// the RDF URI for the root mail folder
+  attribute ACString serverURI;
+
+  /// the URL used to access ews for the account
+  attribute ACString ewsURL;
+
+  /// optional email, used for autodiscover if server can't be reached
+  attribute ACString email;
+
+  /// this string is used to initiate various test modes. Blank in normal operation.
+  attribute ACString testType;
+
+  /// the root folder EWS id
+  attribute AString rootFolderId;
+
+  /// prompt user for password
+  boolean promptUsernameAndPassword(in nsIDOMWindow window);
+
+  /// do we need folder discovery? May be reset to force rediscovery.
+  attribute boolean needFolderDiscovery;
+
+  /// location of the datastore
+  attribute nsIFile datastoreDirectory;
+
+  /// location of the attachments directory, derived from the datastore directory
+  readonly attribute nsIFile attachmentsDirectory;
+
+  /// location of a soap logfile. Null for no logging of soap requests
+  attribute nsIFile soapLogFile;
+
+  /// write text to the soap log file
+  void writeToSoapLog(in AString text);
+
+  /// listener for activities. Only a single listener is supported.
+  attribute msqIEwsActivityListener activityListener;
+
+  /// datastore object for this mailbox
+  readonly attribute msqIEwsDatastore datastore;
+
+  /// is the server online and available?
+  attribute boolean isOnline;
+
+  /// do we need to check the online status?
+  attribute boolean needOnlineCheck;
+
+  /// have we tried autodiscover yet for this run?
+  attribute boolean didAutodiscover;
+
+  /// connection limit for number of EWS connections
+  attribute long connectionLimit;
+
+  /// get and cache, creating if needed, a native folder
+  msqIEwsNativeFolder getNativeFolder([optional] in AString aFolderId);
+
+  /// get native folder from cache, null if not found
+  msqIEwsNativeFolder getNativeFolderFromCache(in AString aFolderId);
+
+  /// make sure that a native folder is cached by normal and distinguished ids
+  void ensureCached(in msqIEwsNativeFolder aFolder);
+
+  /// clear the folder cache
+  void clearCache();
+
+  /// remove a folder from cache, for example if no longer detected remotely
+  void removeFolderFromCache(in AString folderId);
+
+  /// get and cache an existing native folder, using distinguished id
+  msqIEwsNativeFolder getDistinguishedNativeFolder(in AString aDistinguishedFolderId);
+
+  /** Set the folder id. We only allow the mailbox to do this, so that
+   *   it can maintain a cache.
+   */
+  void setNativeFolderId(in msqIEwsNativeFolder aNativeFolder, in AString aFolderId);
+
+  /// update the subfolderIds for all folders in cache
+  void updateSubfolderIds();
+
+  /// get an item by id
+  msqIEwsNativeItem getItem(in AString aItemId);
+
+  /// get an item by id async
+  ///   aListener: gets item on event OnDone in "aItem" field
+  ///   returns: only if aListener is null, else null
+  msqIEwsNativeItem getItemAsync(in AString aItemId, in msqIEwsEventListener aListener);
+
+  /// recurring item exceptions may be accessed by parent id and original start,
+  //  so this special get works for them
+  msqIEwsNativeItem getExItem(in AString aItemId, in AString aParentItemId, in AString aOriginalStart);
+
+  /// get an item by id from the cache, null if not cached
+  msqIEwsNativeItem getItemFromCache(in AString aItemId);
+
+  /// create an item
+  msqIEwsNativeItem createItem(in AString aItemId, in AString aItemClass, in msqIEwsNativeFolder aNativeFolder);
+
+  /// remove an item from persistence
+  void removeItem(in msqIEwsNativeItem aItem);
+
+  /// shutdown the mailbox
+  void shutdown();
+
+  /// check if shutdown
+  readonly attribute boolean isShutdown;
+
+  /**
+   *  We maintain a cache of item objects, so that if an existing object exists we return a reference
+   *   to that. This routine exists solely for use by the nativeItem object, so that it can
+   *   inform the mailbox to remove the the weak pointer to the item from the cache when
+   *   the item is destroyed.
+   */
+  void removeItemFromCache(in AString aItemId);
+
+  void ensureItemCached(in msqIEwsNativeItem aNativeItem);
+
+  /// change an item id. This only makes sense for items with temporary local
+  ///  ids, that now have a real ID from the server. This should really
+  ///  be async since it does datastore operations, but for now I'll
+  ///  just do it sync.
+  void changeItemId(in msqIEwsNativeItem aNativeItem, in AString aNewItemId);
+
+  /// array of item ids of items changed on folder, needing local update
+  void changedOnFolderIds(in AString aFolderId, in msqIEwsEventListener aListener);
+
+  /// array of item ids of item changed on folder, needing SOAP call for properties
+  msqIStringArray needsPropertiesIds(in msqIEwsNativeFolder aNativeFolder);
+
+  /// array of item ids of all items in a folder (using primarily the datastore,
+  ///  but adding with warning from the unpersisted mailbox cache)
+  void allIds(in AString aFolderId, in msqIEwsEventListener aListener);
+
+  msqIStringArray allCachedIds(in AString aFolderId);
+
+  /// array of all folder ids (deep traversal) for a folder from folder cache
+  void allFolderIds(in AString aParentId, in msqIStringArray aFolderIds);
+
+  /**
+   *   load the schema for the server's SOAP messages
+   *
+   *   @parm aServerVersion  string representing the server version
+   *                         possible values:
+   *                         "2007", "2007sp1", "2010"
+   *
+   */
+  void loadSchema(in ACString aServerVersion);
+
+  // The server version for currently loaded schema
+  readonly attribute ACString serverVersion;
+
+  /// the schema namespace URI for the "type" schema
+  readonly attribute AString typeNamespace;
+
+  /// the schema namespace URI for the "message" schema
+  readonly attribute AString messageNamespace;
+
+  /// persist an item to the local datastore. Note this is not a machine request,
+  //   so the completion event is StatementComplete
+  void persistItem(in msqIEwsNativeItem aItem, in msqIEwsEventListener aEventListener);
+
+  /// queue a soap request. If the request is null, sends any existing requests
+  void queueRequest(in msqIEwsSoapRequest aRequest);
+
+  /// remove a request from the active queue when it is complete
+  void finishRequest(in msqIEwsSoapRequest aRequest);
+
+  /// The following methods are calls to the server
+
+  /// get new items for a folder
+  void getNewItems(in msqIEwsNativeFolder aFolder, in msqIEwsEventListener aEventListener);
+
+  /// get new items for a folder, including attachments
+  void getNewItemsAndAttachments(in msqIEwsNativeFolder aFolder, in msqIEwsEventListener aEventListener);
+
+  /// discover all subfolders
+  void discoverFolders(in msqIEwsEventListener aEventListener);
+
+  /// discover subfolders of a folder
+  void discoverSubfolders(in msqIEwsNativeFolder aFolder, in msqIEwsEventListener aEventListener);
+
+  /// generate a soap error for testing
+  void generateError(in msqIEwsEventListener aEventListener);
+
+  /// generate a machine error for testing
+  void invalidType(in msqIEwsEventListener aEventListener, in long aClass);
+
+  /**
+   * get body for existing messages, using persisted copy if available, else soap call
+   */
+  void getItemBody(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aEventListener);
+
+  /// get the item mimeContent
+  void getItemMimeContent(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aEventListener);
+
+  /**
+   * get body and attachments for existing messages, using persisted copy if available, else soap call
+   */
+  void getItemOffline(in msqIEwsNativeItem aNativeItem, in msqIEwsEventListener aEventListener);
+
+  /**
+   * update an item with changes relative to a new property list. The changed item should have
+   *  the flag UpdatedLocally set, which will be cleared when the update is added to the
+   *  server, and the change key updated.
+   */
+  void updateItemProperties(in msqIEwsNativeItem aNativeItem, in msqIPropertyList aNewProperties,
+                            in msqIEwsEventListener aEventListener);
+
+  /**
+   * multi item version of updateItemProperties. Merge changes (unpersisted) should be done on the items
+   */
+  void updateManyItems(in nsIMutableArray aItems, in msqIEwsEventListener aEventListener);
+
+  /**
+   * get the attachment content
+   */
+  void getAttachmentContent(in msqIEwsNativeAttachment aAttachment, in msqIEwsEventListener aEventListener);
+
+  /**
+   * copy items, with update of destination folder
+   */
+  void copyItems(in msqIEwsNativeFolder aDestinationFolder,
+                 in msqIStringArray aItemIds,
+                 in boolean aIsMove,
+                 in msqIEwsEventListener aEventListener);
+
+  /**
+   * create a subfolder
+   */
+  void createSubfolder(in msqIEwsNativeFolder aParentFolder,
+                       in msqIEwsNativeFolder aChildFolder,
+                       in msqIEwsEventListener aEventListener);
+
+  /**
+   * delete subfolders
+   */
+  void deleteSubfolders(in msqIStringArray aFolderIds,
+                        in msqIEwsEventListener aEventListener,
+                        in boolean aMoveToDeletedItems);
+
+  /**
+   * move subfolders
+   */
+  void moveSubfolders(in msqIStringArray aSourceFolderIds,
+                      in msqIEwsNativeFolder aDestFolder,
+                      in msqIEwsEventListener aListener);
+
+  /**
+   * delete items
+   */
+  void deleteItems(in msqIStringArray aItemsIds,
+                   in boolean aMoveToDeletedItems,
+                   in msqIEwsEventListener aEventListener);
+
+  /**
+   * create message from a string
+   */
+  void createMessageFromString(in AString aMessage,
+                               in msqIEwsNativeFolder aFolder,
+                               in msqIPropertyList aProperties, // extra message metadata
+                               in msqIEwsEventListener aEventListener);
+
+  /**
+   * create message from a file
+   */
+  void createMessageFromFile(in nsIFile aMessageFile,
+                             in msqIEwsNativeFolder aFolder,
+                             in msqIPropertyList aProperties, // extra message metadata
+                             in msqIEwsEventListener aEventListener);
+
+  /**
+   * save a new item
+   */
+  void saveNewItem(in msqIEwsNativeItem aItem,
+                   in msqIEwsEventListener aEventListener);
+
+  /**
+   * check online. This call ignores isOnline and sets it correctly
+   */
+  void checkOnline(in msqIEwsEventListener aEventListener);
+
+  /**
+   * save an already existing item
+   */
+  void sendItem(in msqIEwsNativeItem aNativeItem,
+                in boolean aSaveItem,
+                in AString aSavedItemFolderId,
+                in msqIEwsEventListener aEventListener);
+
+  /**
+   * resolve names. Result is returned as the data in a StopMachine event. Machine is
+   *                returned to allow abort.
+   */
+  msqIEwsMachine resolveNames(in AString aEntry,
+                              in boolean aReturnFullContactData,
+                              in msqIEwsEventListener aEventListener);
+
+  /**
+   * getFolder, just get the folder info, used prior to folder reindex.
+   */
+  void getFolder(in msqIEwsNativeFolder aFolder, in msqIEwsEventListener aEventListener);
+
+  /**
+   * get all ids and changekeys from a folder
+   *
+   * itemds returned in aData, changekeys in aItem, as parallel arrays
+   * of msqIStringArray objects
+   */
+  void getAllServerIds(in msqIEwsNativeFolder aNativeFolder,
+                       in msqIEwsEventListener aEventListener);
+
+  /**
+   * run initial machine function as a test
+   */
+  void testInitial(in msqIEwsEventListener aEventListener);
+
+  /**
+   * add, remove an event listener
+   */
+  void addListener(in msqIEwsEventListener aEventListener);
+  void removeListener(in msqIEwsEventListener aEventListener);
+
+};

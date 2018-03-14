@@ -1,0 +1,40 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+interface msqIEwsNativeMailbox;
+
+// {0335CF40-ED34-445c-9E25-430BD9D13A68}
+[scriptable, uuid(0335CF40-ED34-445c-9E25-430BD9D13A68)]
+interface msqIEwsUrl : nsISupports
+{
+  /**
+   *  Extends nsIMsgMailNewsURL to parse EWS-specific issues
+   */
+
+  /// EWS id for item, set by prepare url in server
+  attribute AString itemId;
+  /// Does this url refer to an attachment?
+  readonly attribute boolean isAttachment;
+  /// Attachment sequence number, that is the nth attachment for the item
+  readonly attribute long attachmentSequence;
+  /// skink message key, set by prepare url in server
+  attribute unsigned long messageKey;
+  /// native EWS mailbox
+  readonly attribute msqIEwsNativeMailbox mailbox;
+  /// urlType (copy, move, display) from nsIMsgMailNewsUrl
+  void setUrlType(in unsigned long aType);
+
+};
+
+%{C++
+#include "msqEwsCID.h"
+%}

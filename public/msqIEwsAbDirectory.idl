@@ -1,0 +1,71 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+#include "nsISupports.idl"
+interface msqIEwsNativeFolder;
+interface msqIEwsMachine;
+interface msqIEwsEventListener;
+interface nsISimpleEnumerator;
+interface nsIArray;
+
+[scriptable, uuid(64AEEC24-3F4F-4cf6-A29E-915E497E4F7F)]
+interface msqIEwsAbDirectory : nsISupports
+{
+  /**
+   * The EWS folderId for this folder.
+   */
+  attribute AString folderId;
+  attribute AString distinguishedFolderId;
+
+  /**
+   * serverURI which may be used with msqIEwsNativeServer to find the native
+   *           mailbox associated with this directory
+   */
+  attribute ACString serverURI;
+
+  /**
+   * Get the EWS native folder associated with this directory. This will also
+   *  initialize the native folder, if created locally, using values
+   *  from the directory
+   */
+  readonly attribute msqIEwsNativeFolder nativeFolder;
+
+  // load the directory cards into memory from the disk store
+  void loadDirectoryCards(in msqIEwsEventListener aListener);
+
+  // rebuild the local store from the server
+  void rebuild();
+
+  // update the local ab cards from the server, event StopMachine to end.
+  void updateDirectory(in msqIEwsEventListener aListener);
+
+  // get child cards as an enumerator. If a mailing list update is started, then
+  //  return the enum from StopMachine, else return it immediately
+  nsISimpleEnumerator getChildCardsWithListener(in msqIEwsEventListener aListener);
+
+  /**
+   * Deletes the array of cards from the database - extended version with machine listener
+   *
+   * @param  aCards  The cards to delete from the database.
+   * @param  aListener msqIEwsEventListener with StartMachine/StopMachine events
+   */
+  void deleteCardsWithListener(in nsIArray aCards, in msqIEwsEventListener aListener);
+
+  /**
+   * searchGAL: Search the Global Address List (excluding local contacts) for entries
+   *            with string "entry"
+   *            Results are returned as an nsIArray of nsIAbCard objects in aData of the listener StopMachine
+   *            nativeMachine is returned to allow abort.
+   */
+  msqIEwsMachine searchGAL(in AString aEntry, in msqIEwsEventListener aListener);
+
+  // Is this directory the GAL?
+  readonly attribute boolean isGAL;
+};

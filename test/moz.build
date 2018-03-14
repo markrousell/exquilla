@@ -1,0 +1,12 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla, LLC.
+# *
+# * Copyright 2013 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+# */
+
+XPCSHELL_TESTS_MANIFESTS += ['unit/xpcshell.ini']

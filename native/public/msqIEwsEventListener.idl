@@ -1,0 +1,41 @@
+/*
+ ***** BEGIN LICENSE BLOCK *****
+ * This file is part of ExQuilla by Mesquilla.
+ *
+ * Copyright 2010 R. Kent James
+ *
+ * All Rights Reserved
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+#include "nsISupports.idl"
+
+[scriptable, uuid(8921FACB-8C73-4c22-A86B-01310FD7DE72)]
+interface msqIEwsEventListener : nsISupports
+{
+  /**
+   * Generic extendable callback.
+   *
+   * @param  aItem      The item that the event takes place on
+   
+   * @param  aEvent     string representing event description
+   *
+   * @param  aData      event-specific data
+   * @param  aResult    status of operation, 0 for OK
+   *
+   */
+  void onEvent(in nsISupports aItem, in ACString aEvent, in nsISupports aData, in nsresult result);
+};
+
+[scriptable, uuid(88180156-A0FC-4f69-A758-A4620F408A0A)]
+interface msqIEwsChainListener : msqIEwsEventListener
+{
+  // chains together two listeners, calling first the head then the tail
+  attribute msqIEwsEventListener head;
+  attribute msqIEwsEventListener tail;
+};
+
+%{C++
+#define MSQEWSCHAINLISTENER_CONTRACTID "@mesquilla.com/ewschainlistener;1"
+%}

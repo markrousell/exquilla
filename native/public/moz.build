@@ -1,0 +1,40 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla, LLC.
+# *
+# * Copyright 2013 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+#
+
+XPIDL_SOURCES += [
+  'msqIEwsDatastore.idl',
+  'msqIEwsEventListener.idl',
+  'msqIEwsMachine.idl',
+  'msqIEwsNativeAttachment.idl',
+  'msqIEwsNativeFolder.idl',
+  'msqIEwsNativeItem.idl',
+  'msqIEwsNativeMailbox.idl',
+  'msqIEwsNativeService.idl',
+  'msqIEwsSoapRequest.idl',
+  'msqIEwsSoapResponse.idl',
+  'msqIPropertyEnumerator.idl',
+  'msqIPropertyList.idl',
+  'msqISOAPCall.idl',
+  'msqISOAPCallCompletion.idl',
+  'msqISOAPMessage.idl',
+  'msqISOAPResponse.idl',
+  'msqISOAPResponseListener.idl',
+  'msqISOAPTransport.idl',
+  'msqISOAPTransportListener.idl',
+  'msqIStringArray.idl',
+]
+
+XPIDL_MODULE = 'ewsnative'
+XPI_NAME = 'exquilla'
+
+EXPORTS += [
+  'msqNativeCID.h',
+]

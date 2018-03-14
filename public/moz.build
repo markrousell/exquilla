@@ -1,0 +1,27 @@
+#
+# ***** BEGIN LICENSE BLOCK *****
+# * This file is part of ExQuilla by Mesquilla, LLC.
+# *
+# * Copyright 2013 R. Kent James
+# *
+# * All Rights Reserved
+# *
+# * ***** END LICENSE BLOCK *****
+#
+
+XPIDL_SOURCES += [
+  'msqIEwsAbDirectory.idl',
+  'msqIEwsActivityListener.idl',
+  'msqIEwsCalUtils.idl',
+  'msqIEwsIncomingServer.idl',
+  'msqIEwsMailFolder.idl',
+  'msqIEwsService.idl',
+  'msqIEwsUrl.idl',
+]
+
+EXPORTS += [
+  'msqEwsCID.h',
+]
+
+XPIDL_MODULE = 'exquilla'
+XPI_NAME = 'exquilla'
