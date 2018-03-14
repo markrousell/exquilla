@@ -1,4 +1,10 @@
-/*
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+/* This file is adapted for use with ExQuilla from a Thunderbird source file */
+ 
+ /*
  * Makes everything awesome if you are Andrew.  Some day it will make everything
  *  awesome if you are not awesome too.
  *
