@@ -604,7 +604,7 @@ PromiseUtils.promiseFolderEvents = function promiseFolderEvents(folder, events) 
     let folderListener = {
       QueryInterface: XPCOMUtils.generateQI([Ci.nsIFolderListener]),
       OnItemEvent: function onItemEvent(aEventFolder, aEvent) {
-        if (folder.folderURL == aEventFolder.folderURL && events.includes(aEvent)) {
+        if (folder.folderURL == aEventFolder.folderURL && events.includes(aEvent.toString())) {
           MailServices.mailSession.RemoveFolderListener(folderListener);
           resolve(aEvent);
         }
