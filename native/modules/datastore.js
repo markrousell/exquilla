@@ -16,6 +16,10 @@ XPCOMUtils.defineLazyModuleGetter(this, "StringArray",
                                   "resource://exquilla/StringArray.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PropertyList",
                                   "resource://exquilla/PropertyList.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Services",
+                                  "resource://gre/modules/Services.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "AsyncShutdown",
+                                 "resource://gre/modules/AsyncShutdown.jsm");
 
 /**
  *  Persists a native item
@@ -300,12 +304,78 @@ EwsDataStore.prototype =
   // Connection for the main metadata and body db
   dbConnection: null,
   bodiesConnection: null,
+  dlExpansionConnection: null,
   /// a list of all of the statements, useful in shutdown.
   _dbStatements: [],
   // statements used in the bodies database
   _bodiesStatements: [],
   _dlExpansionStatements: [],
 
+  observe(aSubject, aTopic, aData) {
+    // Connection shutdown
+    if (aTopic == 'profile-before-change') {
+      Services.obs.removeObserver(this, 'profile-before-change');
+      dl('profile-before-change');
+
+      const allClosedPromises = [];
+
+      if (this.dbConnection && this.dbConnection.connectionReady) {
+        allClosedPromises.push(new Promise((resolve, reject) => {
+          for (let stmt of this._dbStatements)
+            stmt.finalize();
+          this.dbConnection.asyncClose( (status, value) => {
+            if (status == Cr.NS_OK) {
+              dl('dbConnection closed');
+              resolve();
+            } else {
+              dl('dbConnection close FAILED');
+              reject();
+            }
+          });
+        }));
+      }
+      if (this.bodiesConnection && this.bodiesConnection.connectionReady) {
+        allClosedPromises.push(new Promise((resolve, reject) => {
+          for (let stmt of this._bodiesStatements)
+            stmt.finalize();
+          this.bodiesConnection.asyncClose( (status, value) => {
+            if (status == Cr.NS_OK) {
+              dl('bodiesConnection closed');
+              resolve();
+            } else {
+              dl('bodiesConnection close FAILED');
+              reject();
+            }
+          });
+        }));
+      }
+      if (this.dlExpansionConnection && this.dlExpansionConnection.connectionReady) {
+        allClosedPromises.push(new Promise((resolve, reject) => {
+          for (let stmt of this._dlExpansionStatements)
+            stmt.finalize();
+          this.dlExpansionConnection.asyncClose( (status, value) => {
+            if (status == Cr.NS_OK) {
+              dl('dlExpansionConnection closed');
+              resolve();
+            } else {
+              dl('dlExpansionConnection close FAILED');
+              reject();
+            }
+          });
+        }));
+      }
+      if (allClosedPromises.length) {
+        AsyncShutdown.profileBeforeChange.addBlocker(
+          "sqlite connections close",
+          function condition() {
+            return Promise.all(allClosedPromises);
+          }
+        );
+      }
+    } else {
+      dl('Unexpected observe');
+    }
+  },
   open: function eds_open(aDbDirectory) {
     try {
     /*
@@ -315,6 +385,9 @@ EwsDataStore.prototype =
       return;
     this._open = true;
     log.config("Datastore initialization for directory " + aDbDirectory.path);
+
+    // We own the connections, so we need to remove them at shutdown
+    Services.obs.addObserver(this, "profile-before-change", false);
     this.dbConnection = this._makeConnection(aDbDirectory, "ews-db.sqlite", 'db');
     this.bodiesConnection = this._makeConnection(aDbDirectory, "ews-bodies.sqlite", 'bodies');
     this.dlExpansionConnection = this._makeConnection(aDbDirectory, "ews-dlExpansion.sqlite", 'dlExpansion');

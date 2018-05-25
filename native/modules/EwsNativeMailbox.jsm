@@ -568,9 +568,10 @@ EwsNativeMailbox.prototype = {
     this.clearCache();
     if (this._soapLogStream)
       this._soapLogStream.close();
-    if (this._datastore)
-      this._datastore.asyncClose(null);
-    this._datastore = null;
+    // Now we use AsyncShutdown to close the database
+    //if (this._datastore)
+    //  this._datastore.asyncClose(null);
+    //this._datastore = null;
   },
 
   get isShutdown() { return this._shutDown;},

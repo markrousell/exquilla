@@ -3,8 +3,8 @@
 
 // support files for ews soap requests
 
-load("../../../../mailnews/resources/logHelper.js");
-load("../../../../mailnews/resources/asyncTestUtils.js");
+load("ewsLogHelper.js");
+load("ewsAsyncTestUtils.js");
 Components.utils.import("resource://exquilla/ewsAbService.jsm");
 Components.utils.import("resource://testing-common/mailnews/localAccountUtils.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");

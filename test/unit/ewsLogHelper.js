@@ -1,10 +1,4 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
-/* This file is adapted for use with ExQuilla from a Thunderbird source file */
- 
- /*
+/*
  * Makes everything awesome if you are Andrew.  Some day it will make everything
  *  awesome if you are not awesome too.
  *
@@ -16,13 +10,19 @@
 
 Components.utils.import("resource:///modules/gloda/log4moz.js");
 Components.utils.import("resource:///modules/IOUtils.js");
+Components.utils.import("resource://gre/modules/Services.jsm");
 
-var _EWStestLogger;
+var _mailnewsTestLogger;
 var _xpcshellLogger;
 var _testLoggerContexts = [];
 var _testLoggerActiveContext;
 
 var _logHelperInterestedListeners = false;
+
+/**
+ * Let test code extend the list of allowed XPCOM errors.
+ */
+var logHelperAllowedErrors = [Cr.NS_ERROR_FAILURE];
 
 /**
  * Let other test helping code decide whether to register for potentially
@@ -41,23 +41,17 @@ function logHelperHasInterestedListeners() {
  *
  * This is based on my (asuth') exmmad extension.
  */
-let _errorConsoleTunnel = {
+var _errorConsoleTunnel = {
   initialize: function () {
-    this.consoleService = Cc["@mozilla.org/consoleservice;1"]
-                            .getService(Ci.nsIConsoleService);
-    this.consoleService.registerListener(this);
+    Services.console.registerListener(this);
 
     // we need to unregister our listener at shutdown if we don't want explosions
-    this.observerService = Cc["@mozilla.org/observer-service;1"]
-                             .getService(Ci.nsIObserverService);
-    this.observerService.addObserver(this, "quit-application", false);
+    Services.obs.addObserver(this, "quit-application");
   },
 
   shutdown: function () {
-    this.consoleService.unregisterListener(this);
-    this.observerService.removeObserver(this, "quit-application");
-    this.consoleService = null;
-    this.observerService = null;
+    Services.console.unregisterListener(this);
+    Services.obs.removeObserver(this, "quit-application");
   },
 
   observe: function (aMessage, aTopic, aData) {
@@ -69,9 +63,37 @@ let _errorConsoleTunnel = {
     try {
       // meh, let's just use mark_failure for now.
       // and let's avoid feedback loops (happens in mozmill)
-      if ((aMessage instanceof Components.interfaces.nsIScriptError) &&
-           (aMessage.flags & Ci.nsIScriptError.errorFlag))
-        mark_failure(["Error console says", aMessage]);
+      if ((aMessage instanceof Ci.nsIScriptError) &&
+        (!aMessage.errorMessage.includes("Error console says")))
+        {
+          // Unfortunately changes to mozilla-central are throwing lots
+          // of console errors during testing, so disable (we hope temporarily)
+          // failing on XPCOM console errors (see bug 1014350).
+          // An XPCOM error aMessage looks like this:
+          //   [JavaScript Error: "uncaught exception: 2147500037"]
+          // Capture the number, and allow known XPCOM results.
+          let matches = /exception: (\d+)/.exec(aMessage);
+          let XPCOMresult = null;
+          if (matches) {
+            for (let result in Cr) {
+              if (matches[1] == Cr[result])
+              {
+                XPCOMresult = result;
+                break;
+              }
+            }
+            let message = XPCOMresult || aMessage;
+            if (logHelperAllowedErrors.some(e => e == matches[1]))
+            {
+              if (XPCOMresult)
+                info("Ignoring XPCOM error: " + message);
+              return;
+            }
+            else
+              info("Found XPCOM error: " + message);
+          }
+          mark_failure(["Error console says", aMessage]);
+        }
     }
     catch (ex) {
       // This is to avoid pathological error loops.  we definitely do not
@@ -101,19 +123,17 @@ function _init_log_helper() {
   rootLogger.level = Log4Moz.Level.All;
 
   // - dump on test
-  _EWStestLogger = Log4Moz.repository.getLogger("test.test");
+  _mailnewsTestLogger = Log4Moz.repository.getLogger("test.test");
   let formatter = new Log4Moz.BasicFormatter();
   let dapp = new Log4Moz.DumpAppender(formatter);
   dapp.level = Log4Moz.Level.All;
-  _EWStestLogger.addAppender(dapp);
+  _mailnewsTestLogger.addAppender(dapp);
 
   // - silent category for xpcshell stuff that already gets dump()ed
   _xpcshellLogger = Log4Moz.repository.getLogger("xpcshell");
 
   // - logsploder
-  let file = Cc["@mozilla.org/file/directory_service;1"]
-               .getService(Ci.nsIProperties)
-               .get("TmpD", Ci.nsIFile);
+  let file = Services.dirsvc.get("TmpD", Ci.nsIFile);
   file.append("logsploder.ptr");
   if (file.exists()) {
     _logHelperInterestedListeners = true;
@@ -174,7 +194,7 @@ function mark_test_start(aName, aParameter, aDepth) {
   mark_test_end(aDepth);
 
   let term = (aDepth == 0) ? "test" : "subtest";
-  _testLoggerActiveContext = _EWStestLogger.newContext({
+  _testLoggerActiveContext = _mailnewsTestLogger.newContext({
     type: term,
     name: aName,
     parameter: aParameter
@@ -186,9 +206,9 @@ function mark_test_start(aName, aParameter, aDepth) {
   }
   _testLoggerContexts.push(_testLoggerActiveContext);
 
-  _EWStestLogger.info(_testLoggerActiveContext,
-                   "Starting " + term + ": " + aName +
-                   (aParameter ? (", " + aParameter) : ""));
+  _mailnewsTestLogger.info(_testLoggerActiveContext,
+                           "Starting " + term + ": " + aName +
+                           (aParameter ? (", " + aParameter) : ""));
 }
 
 /**
@@ -201,8 +221,8 @@ function mark_test_end(aPopTo) {
   while (_testLoggerContexts.length > aPopTo) {
     let context = _testLoggerContexts.pop();
     context.finish();
-    _EWStestLogger.info(context, "Finished " + context.type + ": " + context.name +
-                     (context.parameter ? (", " + context.parameter) : ""));
+    _mailnewsTestLogger.info(context, "Finished " + context.type + ": " + context.name +
+                             (context.parameter ? (", " + context.parameter) : ""));
   }
 }
 
@@ -235,7 +255,7 @@ function mark_sub_test_end() {
 
 /**
  * Express that all tests were run to completion.  This helps the listener
- *  distinguish between succesful termination and abort-style termination where
+ *  distinguish between successful termination and abort-style termination where
  *  the process just keeled over and on one told us.
  *
  * This also tells us to clean up.
@@ -267,7 +287,7 @@ function _explode_flags(aFlagWord, aFlagDefs) {
   return flagList;
 }
 
-let _registered_json_normalizers = [];
+var _registered_json_normalizers = [];
 
 /**
  * Copy natives or objects, deferring to _normalize_for_json for objects.
@@ -307,7 +327,8 @@ function __simple_obj_copy(aObj, aDepthAllowed) {
     else if (!aDepthAllowed) {
       oot[key] = "truncated, string rep: " + value.toString();
     }
-    // array?  we don't count that as depth for now.
+    // array?  (not directly counted, but we will terminate because the
+    //  child copying occurs using nextDepth...)
     else if (Array.isArray(value)) {
       oot[key] = value.map(v => __value_copy(v, nextDepth));
     }
@@ -323,7 +344,7 @@ function __simple_obj_copy(aObj, aDepthAllowed) {
   return oot;
 }
 
-const _INTERESTING_MESSAGE_HEADER_PROPERTIES = {
+var _INTERESTING_MESSAGE_HEADER_PROPERTIES = {
   "gloda-id": 0,
   "gloda-dirty": 0,
   "junkscore": "",
@@ -351,13 +372,17 @@ function _normalize_for_json(aObj, aDepthAllowed, aJsonMeNotNeeded) {
   else if (aObj == null)
     return aObj;
 
+  // recursively transform arrays outright
+  if (Array.isArray(aObj))
+      return aObj.map(v => __value_copy(v, aDepthAllowed - 1));
+
   // === Mail Specific ===
   // (but common and few enough to not split out)
   if (aObj instanceof Ci.nsIMsgFolder) {
     let flags = aObj.flags;
     return {
       type: "folder",
-      name: aObj.prettiestName,
+      name: aObj.prettyName,
       uri: aObj.URI,
       flags: _explode_flags(aObj.flags,
                             Ci.nsMsgFolderFlags),
@@ -387,16 +412,77 @@ function _normalize_for_json(aObj, aDepthAllowed, aJsonMeNotNeeded) {
     };
   }
   // === Generic ===
+  // DOM nodes, including elements
+  else if (aObj instanceof Ci.nsIDOMNode) {
+    let name = aObj.nodeName;
+    let objAttrs = {};
+
+    if (aObj instanceof Ci.nsIDOMElement)
+      name += "#" + aObj.getAttribute("id");
+
+    if ("attributes" in aObj) {
+      let nodeAttrs = aObj.attributes;
+      for (let iAttr = 0; iAttr < nodeAttrs.length; iAttr++) {
+        objAttrs[nodeAttrs[iAttr].name] = nodeAttrs[iAttr].value;
+      }
+    }
+
+    let bounds = { left: null, top: null, width: null, height: null }
+    if ("getBoundingClientRect" in aObj)
+      bounds = aObj.getBoundingClientRect();
+
+    return {
+      type: "domNode",
+      name: name,
+      value: aObj.nodeValue,
+      namespace: aObj.namespaceURI,
+      boundingClientRect: bounds,
+      attrs: objAttrs,
+    };
+  }
+  else if (aObj instanceof Ci.nsIDOMWindow) {
+    let winId, title;
+    if (aObj.document && aObj.document.documentElement) {
+      title = aObj.document.title;
+      winId = aObj.document.documentElement.getAttribute("windowtype") ||
+              aObj.document.documentElement.getAttribute("id") ||
+              "unnamed";
+    }
+    else {
+      winId = "n/a";
+      title = "no document";
+    }
+    return {
+      type: "domWindow",
+      id: winId,
+      title: title,
+      location: "" + aObj.location,
+      coords: {x: aObj.screenX, y: aObj.screenY},
+      dims: {width: aObj.outerWidth, height: aObj.outerHeight},
+    };
+  }
   // Although straight JS exceptions should serialize pretty well, we can
   //  improve things by making "stack" more friendly.
   else if (aObj instanceof Error) {
     return {
+      type: "error",
       message: aObj.message,
       fileName: aObj.fileName,
       lineNumber: aObj.lineNumber,
       name: aObj.name,
       stack: aObj.stack ? aObj.stack.split(/\n\r?/g) : null,
       _stringRep: aObj.message,
+    };
+  }
+  else if (aObj instanceof Ci.nsIException) {
+    return {
+      type: "error",
+      message: "nsIException: " + aObj.name,
+      fileName: aObj.filename, // intentionally lower-case
+      lineNumber: aObj.lineNumber,
+      name: aObj.name,
+      result: aObj.result,
+      stack: null,
     };
   }
   else if (aObj instanceof Ci.nsIStackFrame) {
@@ -417,8 +503,7 @@ function _normalize_for_json(aObj, aDepthAllowed, aJsonMeNotNeeded) {
     };
   }
   else {
-    for (let checkType in _registered_json_normalizers) {
-      let handler = _registered_json_normalizers[checkType];
+    for (let [checkType, handler] of _registered_json_normalizers) {
       if (aObj instanceof checkType)
         return handler(aObj);
     }
@@ -426,13 +511,16 @@ function _normalize_for_json(aObj, aDepthAllowed, aJsonMeNotNeeded) {
     // Do not fall into simple object walking if this is an XPCOM interface.
     //  We might run across getters and that leads to nothing good.
     if (aObj instanceof Ci.nsISupports) {
-      return aObj.toString();
+      return {
+        type: "XPCOM",
+        name: aObj.toString(),
+      }
     }
   }
 
   let simple_obj = __simple_obj_copy(aObj, aDepthAllowed);
   if (!aJsonMeNotNeeded)
-    simple_obj.__proto__ = _fake_json_proto;
+    simple_obj._jsonMe = true;
   return simple_obj;
 }
 
@@ -534,31 +622,31 @@ _Failure.prototype = {
   _jsonMe: true,
 };
 
-let _fake_json_proto = {
-  _jsonMe: true,
-};
-
 function mark_failure(aRichString) {
-  /*
-  dump('ews mark_failure\n');
-  try {
   let args = [_testLoggerActiveContext];
   let text = "";
-  for each (let [i, richThing] in Iterator(aRichString)) {
-    text += (i ? " " : "") + richThing;
-    if (richThing == null || typeof(richThing) != "object")
+  for (let [i, richThing] of aRichString.entries()) {
+    text += (i ? " " : "");
+    if (richThing == null || typeof(richThing) != "object") {
+      text += richThing;
       args.push(richThing);
+    }
     else {
       let jsonThing = _normalize_for_json(richThing);
+      if (("type" in jsonThing) && ("name" in jsonThing))
+        text += "[" + jsonThing.type + " " + jsonThing.name + "]";
+      else
+        text += "[" + jsonThing + "]";
+
       // hook things up to be json serialized.
       if (!("_jsonMe" in jsonThing))
-        jsonThing.__proto__ = _fake_json_proto;
+        jsonThing._jsonMe = true;
       args.push(jsonThing);
     }
   }
   _xpcshellLogger.info.apply(_xpcshellLogger, args);
-*/
-  do_throw(aRichString, Components.stack.caller);
+
+  do_throw(text, Components.stack.caller);
 }
 
 function _wrapped_do_throw(text, stack) {

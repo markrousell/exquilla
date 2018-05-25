@@ -11,7 +11,7 @@
  *   async_run({func: test_some_stuff});
  * }
  *
- * function* test_some_stuff() {
+ * function test_some_stuff() {
  *   yield async_run({func: something_async});
  *   yield async_run({func: something_that_maybe_is_async});
  *   something_that_is_definitely_not_async();
@@ -81,7 +81,7 @@ var asyncCopyListener = {
   }
 };
 
-var asyncGeneratorStack = [];
+var asyncGeneratorStack = [], asyncGeneratorSendValue = undefined;
 
 /**
  * Run a function that may or may not be a generator.  All functions, generator
@@ -114,12 +114,10 @@ function async_run(aArgs) {
     return async_driver();
   }
   else {
-    if (result === undefined) {
+    if (result === undefined)
       return true;
-    }
-    else {
+    else
       return result;
-    }
   }
 }
 
@@ -134,7 +132,8 @@ function async_run(aArgs) {
  *  before we actually continue execution.  It also keeps our stack traces
  *  cleaner.
  */
-function async_driver() {
+function async_driver(val) {
+  asyncGeneratorSendValue = val;
   executeSoon(_async_driver);
   return false;
 }
@@ -154,30 +153,39 @@ function _async_driver() {
   while (asyncGeneratorStack.length) {
     curGenerator = asyncGeneratorStack[asyncGeneratorStack.length-1][0];
     try {
-      while (curGenerator.next()) {
+      let nextItem;
+      do {
+        nextItem = curGenerator.next(asyncGeneratorSendValue);
+        if (!nextItem.value || nextItem.done)
+          break;
+        asyncGeneratorSendValue = undefined;
+      } while (true);
+
+      if (nextItem.done) {
+        asyncGeneratorStack.pop();
+      } else {
+        asyncGeneratorSendValue = undefined;
+        return false;
       }
-      return false;
     }
     catch (ex) {
-      if (ex != StopIteration && ex != asyncExpectedEarlyAbort) {
+      if (ex != asyncExpectedEarlyAbort) {
         let asyncStack = [];
         dump("*******************************************\n");
         dump("Generator explosion!\n");
-        dump("EWS Unhappiness at: " + ex.fileName + ":" + ex.lineNumber + "\n");
+        dump("Unhappiness at: " + (ex.fileName || ex.filename) + ":" + ex.lineNumber + "\n");
         dump("Because: " + ex + "\n");
-        /*
-        dump("Stack:\n  " + ex.stack.replace("\n", "\n  ", "g") + "\n");
+        if (ex.stack)
+          dump("Stack:\n  " + ex.stack.replace(/\n/g, "\n  ") + "\n");
         dump("**** Async Generator Stack source functions:\n");
         for (let i = asyncGeneratorStack.length - 1; i >= 0; i--) {
           dump("  " + asyncGeneratorStack[i][1] + "\n");
           asyncStack.push(asyncGeneratorStack[i][1]);
         }
-        */
         dump("*********\n");
         logException(ex);
         mark_failure(["Generator explosion. ex:", ex, "async stack",
                       asyncStack]);
-        dump("after mark_failure\n");
       }
       asyncGeneratorStack.pop();
     }
@@ -215,7 +223,7 @@ function _async_test_runner_postTest() {
 }
 
 function _async_test_runner_timeout() {
-  for (let helper of (ASYNC_TEST_RUNNER_HELPERS)) {
+  for (let helper of ASYNC_TEST_RUNNER_HELPERS) {
     try {
       if (helper.onTimeout)
         helper.onTimeout();
@@ -240,7 +248,10 @@ function parameterizeTest(aTestFunc, aParameters) {
   return [aTestFunc, aParameters];
 }
 
-const DEFAULT_LONGEST_TEST_RUN_CONCEIVABLE_SECS = 600;
+// This time is 60 seconds less than the tinderbox timeout default of 300
+// seconds and will hopefully cause tests to give us their logs before that
+// timeout.
+var DEFAULT_LONGEST_TEST_RUN_CONCEIVABLE_SECS = 240;
 function async_run_tests(aTests, aLongestTestRunTimeConceivableInSecs) {
   if (aLongestTestRunTimeConceivableInSecs == null)
     aLongestTestRunTimeConceivableInSecs =
