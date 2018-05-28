@@ -36,10 +36,6 @@ XPCOMUtils.defineLazyGetter(this, "log", () => {
   return _log;
 });
 
-// We need to be able to locate active notifications. We store them
-// here.
-let gActiveNotifications = [];
-
 function EwsNotification(aEwsIncomingServer) {
   this._skinkServer = aEwsIncomingServer;
   this._subscriptionId = "";
@@ -47,7 +43,7 @@ function EwsNotification(aEwsIncomingServer) {
   this._request = null; // active request needing aborting on shutdown
 
   // The observer service owns this notification.
-  Services.obs.addObserver(this, "quit-application", false);
+  Services.obs.addObserver(this, "profile-change-net-teardown", false);
   Services.obs.addObserver(this, "network:offline-status-changed", false);
   log.info("Starting EwsNotification");
 }
@@ -95,7 +91,6 @@ EwsNotification.prototype = {
           else {
             this._subscriptionId = result.request.result.getAString("SubscriptionId");
             log.config("started subscription with ID " + this._subscriptionId);
-            gActiveNotifications.push(this);
           }
         }
 
@@ -179,9 +174,9 @@ EwsNotification.prototype = {
   },
 
   observe(subject, topic, data) {
-    if (topic == "quit-application") {
+    if (topic == "profile-change-net-teardown") {
       Services.obs.removeObserver(this, "network:offline-status-changed");
-      Services.obs.removeObserver(this, "quit-application");
+      Services.obs.removeObserver(this, "profile-change-net-teardown");
       log.debug("Quitting EwsNotification at application quit");
       this._active = false;
       this.cancel();
@@ -199,10 +194,6 @@ EwsNotification.prototype = {
   },
 
   cancel() {
-    let myIndex = gActiveNotifications.indexOf(this);
-    if (myIndex >= 0) {
-      gActiveNotifications.splice(myIndex, 1);
-    }
     if (this._request) {
       log.debug("Aborting existing xhr for ews notifications");
       this._request.soapResponse.xhr.abort();
