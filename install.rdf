@@ -12,6 +12,7 @@
     <em:translator>Axel Grude</em:translator>
     <em:description>Access to email and contacts using Microsoft Exchange Web Services</em:description>
     <em:homepageURL>http://mesquilla.com/extensions/exquilla</em:homepageURL>
+    <em:strictCompatibility>true</em:strictCompatibility>
     <em:iconURL>chrome://exquilla/skin/letter-x-icon-48.png</em:iconURL>
     <em:icon64URL>chrome://exquilla/skin/letter-x-icon-64.png</em:icon64URL>
     _OPTIONAL_UPDATE_SITE_
