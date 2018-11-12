@@ -1,11 +1,12 @@
 content  exquilla   content/
 locale   exquilla   de  locale/de/
+locale   exquilla   en-US  locale/en-US/
+locale   exquilla   es-ES  locale/es-ES/
 locale   exquilla   fr  locale/fr/
+locale   exquilla   hu  locale/hu/
 locale   exquilla   it  locale/it/
 locale   exquilla   ja  locale/ja/
 locale   exquilla   ru  locale/ru/
-locale   exquilla   en-US  locale/en-US/
-locale   exquilla   es-ES  locale/es-ES/
 manifest components/datastoreComponent.manifest
 manifest components/interfaces.manifest
 manifest components/jsComponents.manifest

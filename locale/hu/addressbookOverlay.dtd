@@ -6,5 +6,5 @@
      corresponding text, and should be unique in this file
 -->
 
-<!ENTITY exquilla.rebuild.label "Rebuild">
-<!ENTITY exquilla.rebuild.accesskey "R">
+<!ENTITY exquilla.rebuild.label "Újraépítése">
+<!ENTITY exquilla.rebuild.accesskey "Ú">

@@ -24,5 +24,18 @@
         <em:maxVersion>60.*</em:maxVersion>
       </Description>
     </em:targetApplication>
+    <!-- Hungarian -->
+    <em:localized>
+      <Description>
+        <em:locale>hu</em:locale>
+        <em:name>ExQuilla a Microsoft Exchange számára (ExQuilla for Microsoft Exchange)</em:name>
+        <em:description>Hozzáférés az e-mailekhez és a névjegyekhez a Microsoft Exchange webszolgáltatások használatával</em:description>
+        <em:homepageURL>http://mesquilla.com/extensions/exquilla</em:homepageURL>
+        <em:creator>R Kent James</em:creator>
+        <em:developer>MesQuilla (Build _EXQUILLA_BUILD_DATE_)</em:developer>
+        <em:translator>Axel Grude</em:translator>
+        <em:translator>Óvári (hu)</em:translator>
+      </Description>
+    </em:localized>
   </Description>
 </RDF>
